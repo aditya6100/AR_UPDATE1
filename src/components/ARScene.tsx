@@ -184,30 +184,25 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
 
     // --- ASYNC AR BUTTON INITIALIZATION ---
     const setupARButton = async () => {
-      // 1. Create the image and wait for it to load
-      const img = new Image();
-      img.src = window.location.origin + '/AR_UPDATE1/marker.png'; 
-      
-      let bitmap: ImageBitmap | null = null;
-      try {
-        await img.decode();
-        bitmap = await createImageBitmap(img);
-        console.log("AR: Marker image loaded successfully");
-      } catch (e) {
-        console.error("AR: Failed to load marker image:", e);
-      }
-
       const sessionInit: any = {
-        requiredFeatures: ['hit-test', 'image-tracking'], // Force image tracking
-        optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar'],
+        requiredFeatures: ['hit-test'], // Only hit-test is mandatory
+        optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar', 'image-tracking'],
         domOverlay: { root: document.body },
       };
 
-      if (bitmap) {
+      try {
+        const img = new Image();
+        // Use relative path for better compatibility
+        img.src = './marker.png'; 
+        await img.decode();
+        const bitmap = await createImageBitmap(img);
         sessionInit.trackedImages = [{
           image: bitmap,
           widthInMeters: 0.2
         }];
+        console.log("AR: Image tracking configured.");
+      } catch (e) {
+        console.warn("AR: Image tracking setup failed or not supported, continuing without it.", e);
       }
 
       const arButton = ARButton.createButton(renderer, sessionInit);
