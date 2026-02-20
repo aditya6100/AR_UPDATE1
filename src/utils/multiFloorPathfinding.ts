@@ -115,24 +115,47 @@ function findUnifiedPath(
       return path;
     }
 
-    const currentNode = graph.find(w => w.id === current);
-    if (!currentNode) continue;
+    const currentNode = graph.find(w => w.id === current)!;
+    const prevId = cameFrom[current];
+    const prevNode = prevId ? graph.find(n => n.id === prevId) : null;
 
     for (const neighborId of currentNode.connectedTo) {
       const neighbor = graph.find(w => w.id === neighborId);
       if (!neighbor) continue;
 
-      // Extra cost for vertical transitions
-      let extraCost = 0;
+      // 1. Physical distance
+      let dist = distance3D(currentNode, neighbor);
+
+      // 2. Extra cost for vertical transitions
       if (currentNode.floorId !== neighbor.floorId) {
         const connector = verticalConnectors.find(c =>
           Object.values(c.floorWaypoints).includes(current) &&
           Object.values(c.floorWaypoints).includes(neighborId)
         );
-        extraCost = connector?.costPerFloor ?? 20;
+        dist += connector?.costPerFloor ?? 20;
       }
 
-      const tentative = gScore[current] + distance3D(currentNode, neighbor) + extraCost;
+      // 3. Professional Path: Penalty for turning
+      // If we have a previous node, check if neighbor is in a different direction
+      if (prevNode) {
+        const dx1 = currentNode.position[0] - prevNode.position[0];
+        const dz1 = currentNode.position[1] - prevNode.position[1];
+        const dx2 = neighbor.position[0] - currentNode.position[0];
+        const dz2 = neighbor.position[1] - currentNode.position[1];
+
+        // Normalize vectors
+        const mag1 = Math.sqrt(dx1 * dx1 + dz1 * dz1) || 1;
+        const mag2 = Math.sqrt(dx2 * dx2 + dz2 * dz2) || 1;
+        
+        // Dot product to find alignment (1 = same dir, -1 = reverse, 0 = 90deg)
+        const dot = (dx1 * dx2 + dz1 * dz2) / (mag1 * mag2);
+        
+        if (dot < 0.9) { // If it's not a straight line (> ~25 degrees)
+          dist += 15; // Heavy penalty for turning to force straight paths
+        }
+      }
+
+      const tentative = gScore[current] + dist;
       if (tentative < (gScore[neighborId] ?? Infinity)) {
         cameFrom[neighborId] = current;
         gScore[neighborId] = tentative;
@@ -220,8 +243,10 @@ export function findMultiFloorPath(
         waypointIds: [wpId],
         positions: [[node.position[0], node.position[1]]],
       };
-      // Add start room center to the very first segment
+      // Add start room center + intermediate point for 90-degree turn
       if (segments.length === 0 && startRoomPos) {
+        // Intermediate point: Room's X, Hallway's Z
+        currentSegment.positions.unshift([startRoomPos[0], node.position[1]]);
         currentSegment.positions.unshift(startRoomPos);
       }
       segments.push(currentSegment);
@@ -231,9 +256,13 @@ export function findMultiFloorPath(
     }
   }
 
-  // Add end room center to the very last segment
+  // Add end room center + intermediate point for 90-degree turn to the very last segment
   if (segments.length > 0 && endRoomPos) {
-    segments[segments.length - 1].positions.push(endRoomPos);
+    const lastSeg = segments[segments.length - 1];
+    const lastNodePos = lastSeg.positions[lastSeg.positions.length - 1];
+    // Intermediate point: Room's X, Hallway's Z
+    lastSeg.positions.push([endRoomPos[0], lastNodePos[1]]);
+    lastSeg.positions.push(endRoomPos);
   }
 
   // Tag start/end floor IDs for context
