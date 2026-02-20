@@ -224,9 +224,9 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         const dz = p2[1] - p1[1];
         const pathAngle = Math.atan2(dx, dz);
 
-        // 2. Adjust rotation: user reported arrows on the right with PI - pathAngle.
-        // We rotate by PI/2 - pathAngle to shift the orientation 90 degrees clockwise.
-        group.rotation.set(0, (Math.PI / 2) - pathAngle, 0);
+        // 2. Adjust rotation: user requested 180 degrees after the 90-degree fix.
+        // We use (Math.PI * 1.5) - pathAngle to rotate another 90 degrees clockwise.
+        group.rotation.set(0, (Math.PI * 1.5) - pathAngle, 0);
 
         // 3. Position: place first waypoint (p1) at user's feet (origin)
         const p1Vec = new THREE.Vector3(p1[0], 0, p1[1]).multiplyScalar(AR_SCALE);
