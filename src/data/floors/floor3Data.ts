@@ -14,8 +14,8 @@ export const floor3Data = {
     [ 0.00,  3.20],  //  0 — top-left
     [24.54,  3.20],  //  1 — corridor top → Lab10 RHS
     [24.54,  2.35],  //  2 — step UP (Stairs-box left wall)
-    [26.47,  2.35],  //  3 — Stairs box top-right corner
-    [26.47,  3.20],  //  4 — step back down
+    [27.54,  2.35],  //  3 — Stairs box top-right corner
+    [27.54,  3.20],  //  4 — step back down
     [27.17,  3.20],  //  5 — jog right to Lab9 left wall
     [38.98,  3.20],  //  6 — right building edge (top)
     [38.98,  4.10],  //  7 — right building edge (bottom)
@@ -62,13 +62,13 @@ export const floor3Data = {
     {
       id:          'f3_stairs_top',
       name:        'Stairs',
-      center:      [25.72, 0.75],
+      center:      [26.04, 1.10],
       connectedTo: ['f3_wp_stairs_top'],
     },
     {
       id:          'f3_lab9',
       name:        'Lab 9',
-      center:      [32.21, 3.65],
+      center:      [33.15, 3.65],
       connectedTo: ['f3_wp_lab9'],
     },
     {
@@ -153,7 +153,7 @@ export const floor3Data = {
     },
     {
       id:          'f3_wp_stairs_top',
-      position:    [25.72, 3.65],
+      position:    [26.04, 3.65],
       connectedTo: ['f3_wp_lab10', 'f3_wp_lab9'],
     },
     {
@@ -208,10 +208,10 @@ export const floor3Data = {
     { p1: [10.54, 0.00], p2: [10.54, 3.20] },
     { p1: [16.54, 0.00], p2: [16.54, 3.20] },
     { p1: [24.54, 0.00], p2: [24.54, 3.20] },
-    { p1: [24.97, 0.00], p2: [24.97, 1.50] },
-    { p1: [26.47, 0.00], p2: [26.47, 1.50] },
-    { p1: [24.97, 1.50], p2: [26.47, 1.50] },
-    { p1: [24.54, 2.35], p2: [26.47, 2.35] },
+    { p1: [24.54, 0.00], p2: [24.54, 1.50] },
+    { p1: [27.54, 0.00], p2: [27.54, 1.50] },
+    { p1: [24.54, 1.50], p2: [27.54, 1.50] },
+    { p1: [24.54, 2.35], p2: [27.54, 2.35] },
     { p1: [ 1.78, 4.10], p2: [ 1.78, 7.30] },
     { p1: [ 3.58, 4.10], p2: [ 3.58, 7.30] },
     { p1: [ 5.36, 4.10], p2: [ 5.36, 7.30] },
