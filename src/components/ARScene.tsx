@@ -209,9 +209,8 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
       if (!group) return;
 
       // ── Scale the floor plan group to real-world metres ────────────────
-      // We want ~5 metres total width in AR for a more manageable size.
-      // Floor plan is 52 units wide. Scale = 5 / 52 ≈ 0.1
-      const AR_SCALE = 0.1;
+      // Set to 1.0 for 1:1 scale (1 unit = 1 metre).
+      const AR_SCALE = 1.0;
       group.scale.set(AR_SCALE, AR_SCALE, AR_SCALE);
 
       // ── Position & Rotation: Align path to start in front of user ──────
@@ -224,17 +223,15 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         const dz = p2[1] - p1[1];
         const pathAngle = Math.atan2(dx, dz);
 
-        // 2. Rotation: Reversed by another 90 degrees as requested.
-        // This sets the baseline to 0.
+        // 2. Rotation: Using the current 'perfect' baseline
         group.rotation.set(0, -pathAngle, 0);
 
-        // 3. Position: Place p1 slightly IN FRONT of the user (1.5m forward)
-        // so they aren't standing 'inside' the first arrow.
+        // 3. Position: Place first waypoint (p1) exactly at user's feet (origin)
+        // for 1:1 real-world measurement.
         const p1Vec = new THREE.Vector3(p1[0], 0, p1[1]).multiplyScalar(AR_SCALE);
         p1Vec.applyAxisAngle(new THREE.Vector3(0, 1, 0), group.rotation.y);
         
-        // Offset by 1.5m on AR's negative Z axis (forward)
-        group.position.set(-p1Vec.x, 0, -p1Vec.z - 1.5);
+        group.position.set(-p1Vec.x, 0, -p1Vec.z);
       } else {
         // Fallback if no path: place start room at origin
         const startRoomObj = floorData.rooms.find(r => r.id === startRoomRef.current);
