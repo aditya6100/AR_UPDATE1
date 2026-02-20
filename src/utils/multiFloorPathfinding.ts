@@ -33,7 +33,7 @@ export interface PathSegment {
 function buildUnifiedGraph(allFloorData: FloorData[]): UnifiedWaypoint[] {
   const unified: UnifiedWaypoint[] = [];
 
-  // Add all floor waypoints (already floor-prefixed by convention)
+  // Add all floor waypoints
   for (const floor of allFloorData) {
     const floorNum = parseInt(floor.floorId.replace('f', ''), 10);
     for (const wp of floor.waypoints) {
@@ -49,14 +49,12 @@ function buildUnifiedGraph(allFloorData: FloorData[]): UnifiedWaypoint[] {
   // Add vertical connector edges
   for (const connector of verticalConnectors) {
     const floorIds = Object.keys(connector.floorWaypoints);
-    // Connect adjacent floors through this connector
     for (let i = 0; i < floorIds.length; i++) {
       const floorA = floorIds[i];
       const wpA = connector.floorWaypoints[floorA];
       const nodeA = unified.find(u => u.id === wpA);
       if (!nodeA) continue;
 
-      // Connect to floors above and below
       for (let j = 0; j < floorIds.length; j++) {
         if (i === j) continue;
         const floorB = floorIds[j];
@@ -108,7 +106,6 @@ function findUnifiedPath(
     openSet.sort((a, b) => fScore[a] - fScore[b]);
     const current = openSet.shift()!;
     if (current === endId) {
-      // Reconstruct
       const path = [current];
       let c = current;
       while (cameFrom[c]) { c = cameFrom[c]; path.unshift(c); }
@@ -123,10 +120,8 @@ function findUnifiedPath(
       const neighbor = graph.find(w => w.id === neighborId);
       if (!neighbor) continue;
 
-      // 1. Physical distance
       let dist = distance3D(currentNode, neighbor);
 
-      // 2. Extra cost for vertical transitions
       if (currentNode.floorId !== neighbor.floorId) {
         const connector = verticalConnectors.find(c =>
           Object.values(c.floorWaypoints).includes(current) &&
@@ -135,24 +130,15 @@ function findUnifiedPath(
         dist += connector?.costPerFloor ?? 20;
       }
 
-      // 3. Professional Path: Penalty for turning
-      // If we have a previous node, check if neighbor is in a different direction
       if (prevNode) {
         const dx1 = currentNode.position[0] - prevNode.position[0];
         const dz1 = currentNode.position[1] - prevNode.position[1];
         const dx2 = neighbor.position[0] - currentNode.position[0];
         const dz2 = neighbor.position[1] - currentNode.position[1];
-
-        // Normalize vectors
         const mag1 = Math.sqrt(dx1 * dx1 + dz1 * dz1) || 1;
         const mag2 = Math.sqrt(dx2 * dx2 + dz2 * dz2) || 1;
-        
-        // Dot product to find alignment (1 = same dir, -1 = reverse, 0 = 90deg)
         const dot = (dx1 * dx2 + dz1 * dz2) / (mag1 * mag2);
-        
-        if (dot < 0.9) { // If it's not a straight line (> ~25 degrees)
-          dist += 15; // Heavy penalty for turning to force straight paths
-        }
+        if (dot < 0.9) dist += 15;
       }
 
       const tentative = gScore[current] + dist;
@@ -173,7 +159,6 @@ export function findMultiFloorPath(
   endRoomId: string,
   allFloorData: FloorData[]
 ): PathSegment[] {
-  // Find which waypoint each room connects to
   let startWpId = '';
   let endWpId = '';
   let startFloorId = '';
@@ -198,7 +183,6 @@ export function findMultiFloorPath(
   const pathIds = findUnifiedPath(startWpId, endWpId, graph);
   if (pathIds.length === 0) return [];
 
-  // Find room centers to add to the path
   let startRoomPos: [number, number] | null = null;
   let endRoomPos: [number, number] | null = null;
   for (const floor of allFloorData) {
@@ -208,7 +192,6 @@ export function findMultiFloorPath(
     if (eR) endRoomPos = eR.center;
   }
 
-  // Split path into per-floor segments
   const segments: PathSegment[] = [];
   let currentSegment: PathSegment | null = null;
 
@@ -217,7 +200,6 @@ export function findMultiFloorPath(
     const node = graph.find(n => n.id === wpId)!;
 
     if (!currentSegment || currentSegment.floorId !== node.floorId) {
-      // Detect transition type
       let transition: PathSegment['transition'] | undefined;
       if (currentSegment && i > 0) {
         const prevId = pathIds[i - 1];
@@ -233,9 +215,7 @@ export function findMultiFloorPath(
             toFloor: node.floorId,
           };
         }
-        if (currentSegment) {
-          currentSegment.transition = transition;
-        }
+        if (currentSegment) currentSegment.transition = transition;
       }
 
       currentSegment = {
@@ -243,33 +223,6 @@ export function findMultiFloorPath(
         waypointIds: [wpId],
         positions: [[node.position[0], node.position[1]]],
       };
-      // Add start room center + intermediate point for 90-degree turn
-      if (segments.length === 0 && startRoomPos) {
-        // Calculate a point 1.5m 'behind' the room to show it clearly
-        const dx = startRoomPos[0] - node.position[0];
-        const dz = startRoomPos[1] - node.position[1];
-        const mag = Math.sqrt(dx * dx + dz * dz) || 1;
-        // Point slightly further back from the hallway
-        const behindPoint: [number, number] = [
-            startRoomPos[0] + (dx / mag) * 1.5,
-            startRoomPos[1] + (dz / mag) * 1.5
-        ];
-
-        // 1. Point further back
-        currentSegment.positions.unshift(startRoomPos);
-        // 2. Room center
-        currentSegment.positions.unshift(behindPoint);
-        
-        // 3. Intermediate point for 90-degree turn (ensure it's after room center)
-        // We actually want the sequence: Behind -> Room Center -> Turn -> Hallway
-        // Resetting positions for clarity:
-        currentSegment.positions = [
-            behindPoint,
-            startRoomPos,
-            [startRoomPos[0], node.position[1]], // Turn point
-            [node.position[0], node.position[1]] // Hallway point
-        ];
-      }
       segments.push(currentSegment);
     } else {
       currentSegment.waypointIds.push(wpId);
@@ -277,25 +230,32 @@ export function findMultiFloorPath(
     }
   }
 
-  // Add end room center + intermediate point for 90-degree turn to the very last segment
-  if (segments.length > 0 && endRoomPos) {
-    const lastSeg = segments[segments.length - 1];
-    const lastNodePos = lastSeg.positions[lastSeg.positions.length - 1];
-    // Intermediate point: Room's X, Hallway's Z
-    lastSeg.positions.push([endRoomPos[0], lastNodePos[1]]);
-    lastSeg.positions.push(endRoomPos);
-  }
-
-  // Tag start/end floor IDs for context
+  // Final touches for start and end segments
   if (segments.length > 0) {
-    (segments[0] as any)._startFloor = startFloorId;
-    (segments[segments.length - 1] as any)._endFloor = endFloorId;
+    // 1. First segment: Add room center and 'behind' point
+    if (startRoomPos) {
+      const firstSeg = segments[0];
+      const firstWpPos = firstSeg.positions[0];
+      const dx = startRoomPos[0] - firstWpPos[0];
+      const dz = startRoomPos[1] - firstWpPos[1];
+      const mag = Math.sqrt(dx * dx + dz * dz) || 1;
+      const behind: [number, number] = [startRoomPos[0] + (dx/mag)*1.5, startRoomPos[1] + (dz/mag)*1.5];
+      
+      // Order: Behind -> Center -> CorridorWaypoints
+      firstSeg.positions.unshift(startRoomPos);
+      firstSeg.positions.unshift(behind);
+    }
+
+    // 2. Last segment: Add end room center
+    if (endRoomPos) {
+      const lastSeg = segments[segments.length - 1];
+      lastSeg.positions.push(endRoomPos);
+    }
   }
 
   return segments;
 }
 
-// ── Helper: get all rooms across all floors (for UI dropdowns) ─
 export function getAllRooms(allFloorData: FloorData[]) {
   return allFloorData.flatMap(floor =>
     floor.rooms
@@ -303,7 +263,7 @@ export function getAllRooms(allFloorData: FloorData[]) {
       .map(r => ({
         ...r,
         floorId: floor.floorId,
-        floorLabel: floor.floorId, // resolved in UI via floorRegistry
+        floorLabel: floor.floorId,
       }))
   );
 }
