@@ -209,22 +209,43 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
       if (!group) return;
 
       // ── Scale the floor plan group to real-world metres ────────────────
-      // Floor plan is 52 world-units wide. We want it ~10 metres in AR.
-      // Scale = 10 / 52 ≈ 0.19
-      const AR_SCALE = 0.19;
+      // We want ~5 metres total width in AR for a more manageable size.
+      // Floor plan is 52 units wide. Scale = 5 / 52 ≈ 0.1
+      const AR_SCALE = 0.1;
       group.scale.set(AR_SCALE, AR_SCALE, AR_SCALE);
 
-      // ── Position: place start room waypoint at user's feet (origin) ────
-      const startRoomObj = floorData.rooms.find(r => r.id === startRoomRef.current);
-      if (startRoomObj?.connectedTo?.[0]) {
-        const startWp = floorData.waypoints.find(w => w.id === startRoomObj.connectedTo[0]);
-        if (startWp) {
-          // Offset so the start waypoint appears at world origin
-          group.position.set(
-            -startWp.position[0] * AR_SCALE,
-            0,
-            -startWp.position[1] * AR_SCALE
-          );
+      // ── Position & Rotation: Align path to start in front of user ──────
+      if (activeSegment && activeSegment.positions.length >= 2) {
+        const p1 = activeSegment.positions[0];
+        const p2 = activeSegment.positions[1];
+
+        // 1. Reset rotation
+        group.rotation.set(0, 0, 0);
+
+        // 2. Calculate the angle of the first path segment in floor coordinates
+        // Math.atan2(dx, dz) gives the angle relative to the floor's Z-axis
+        const dx = p2[0] - p1[0];
+        const dz = p2[1] - p1[1];
+        const pathAngle = Math.atan2(dx, dz);
+
+        // 3. Rotate group so this segment aligns with AR's negative Z-axis (forward)
+        // AR Forward is (0, 0, -1), which is angle Math.PI
+        // Rotation = TargetAngle - CurrentPathAngle
+        group.rotation.y = Math.PI - pathAngle;
+
+        // 4. Position: place p1 at origin (user's feet)
+        // We must apply the rotation to the offset vector
+        const offset = new THREE.Vector3(-p1[0] * AR_SCALE, 0, -p1[1] * AR_SCALE);
+        offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), group.rotation.y);
+        group.position.copy(offset);
+      } else {
+        // Fallback if no path: place start room at origin
+        const startRoomObj = floorData.rooms.find(r => r.id === startRoomRef.current);
+        if (startRoomObj?.connectedTo?.[0]) {
+          const startWp = floorData.waypoints.find(w => w.id === startRoomObj.connectedTo[0]);
+          if (startWp) {
+            group.position.set(-startWp.position[0] * AR_SCALE, 0, -startWp.position[1] * AR_SCALE);
+          }
         }
       }
 
@@ -260,6 +281,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
       // ── Restore 3D view scale and position ─────────────────────────────
       group.scale.set(1, 1, 1);
       group.position.set(0, 0, 0);
+      group.rotation.set(0, 0, 0);
 
       // ── Restore visibility ─────────────────────────────────────────────
       if (labelsGroupRef.current) labelsGroupRef.current.visible = true;
