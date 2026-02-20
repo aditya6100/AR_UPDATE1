@@ -224,9 +224,9 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         const dz = p2[1] - p1[1];
         const pathAngle = Math.atan2(dx, dz);
 
-        // 2. Rotation: Flipped 180 degrees from 1.5PI to 0.5PI.
-        // This keeps the 'portrait' alignment but reverses the arrow direction.
-        group.rotation.set(0, (Math.PI / 2) - pathAngle, 0);
+        // 2. Rotation: Reversed by another 90 degrees as requested.
+        // This sets the baseline to 0.
+        group.rotation.set(0, -pathAngle, 0);
 
         // 3. Position: Place p1 slightly IN FRONT of the user (1.5m forward)
         // so they aren't standing 'inside' the first arrow.
