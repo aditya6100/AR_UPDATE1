@@ -245,9 +245,30 @@ export function findMultiFloorPath(
       };
       // Add start room center + intermediate point for 90-degree turn
       if (segments.length === 0 && startRoomPos) {
-        // Intermediate point: Room's X, Hallway's Z
-        currentSegment.positions.unshift([startRoomPos[0], node.position[1]]);
+        // Calculate a point 1.5m 'behind' the room to show it clearly
+        const dx = startRoomPos[0] - node.position[0];
+        const dz = startRoomPos[1] - node.position[1];
+        const mag = Math.sqrt(dx * dx + dz * dz) || 1;
+        // Point slightly further back from the hallway
+        const behindPoint: [number, number] = [
+            startRoomPos[0] + (dx / mag) * 1.5,
+            startRoomPos[1] + (dz / mag) * 1.5
+        ];
+
+        // 1. Point further back
         currentSegment.positions.unshift(startRoomPos);
+        // 2. Room center
+        currentSegment.positions.unshift(behindPoint);
+        
+        // 3. Intermediate point for 90-degree turn (ensure it's after room center)
+        // We actually want the sequence: Behind -> Room Center -> Turn -> Hallway
+        // Resetting positions for clarity:
+        currentSegment.positions = [
+            behindPoint,
+            startRoomPos,
+            [startRoomPos[0], node.position[1]], // Turn point
+            [node.position[0], node.position[1]] // Hallway point
+        ];
       }
       segments.push(currentSegment);
     } else {
