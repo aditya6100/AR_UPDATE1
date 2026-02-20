@@ -178,7 +178,8 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
 
       try {
         const img = new Image();
-        img.src = '/AR_UPDATE1/marker.png'; // Path for GitHub Pages
+        // Use full URL path for marker on GitHub Pages
+        img.src = '/AR_UPDATE1/marker.png'; 
         await img.decode();
         const bitmap = await createImageBitmap(img);
         sessionInit.trackedImages = [{
