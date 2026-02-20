@@ -62,6 +62,20 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   // Position of our physical marker in the virtual world (e.g. HOD Door)
   const calibrationPoint = { x: -22.5, z: 0 }; 
 
+  const tryCalibrate = () => {
+    if (floorPlanGroupRef.current && cameraRef.current) {
+      const group = floorPlanGroupRef.current;
+      const cam = cameraRef.current;
+      group.position.set(cam.position.x, 0, cam.position.z);
+      group.rotation.set(0, cam.rotation.y, 0);
+      group.translateX(-calibrationPoint.x);
+      group.translateZ(-calibrationPoint.z);
+      setIsCalibrated(true);
+      setIsScanning(false);
+      if (navigator.vibrate) navigator.vibrate(200);
+    }
+  };
+
   useEffect(() => {
     console.log("isFarView changed:", isFarView);
     if (cameraRef.current && controlsRef.current) {
@@ -170,25 +184,30 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
 
     // --- ASYNC AR BUTTON INITIALIZATION ---
     const setupARButton = async () => {
+      // 1. Create the image and wait for it to load
+      const img = new Image();
+      img.src = window.location.origin + '/AR_UPDATE1/marker.png'; 
+      
+      let bitmap: ImageBitmap | null = null;
+      try {
+        await img.decode();
+        bitmap = await createImageBitmap(img);
+        console.log("AR: Marker image loaded successfully");
+      } catch (e) {
+        console.error("AR: Failed to load marker image:", e);
+      }
+
       const sessionInit: any = {
-        requiredFeatures: ['hit-test'],
-        optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar', 'image-tracking'],
+        requiredFeatures: ['hit-test', 'image-tracking'], // Force image tracking
+        optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar'],
         domOverlay: { root: document.body },
       };
 
-      try {
-        const img = new Image();
-        // Use full URL path for marker on GitHub Pages
-        img.src = '/AR_UPDATE1/marker.png'; 
-        await img.decode();
-        const bitmap = await createImageBitmap(img);
+      if (bitmap) {
         sessionInit.trackedImages = [{
           image: bitmap,
-          widthInMeters: 0.2 // 20cm
+          widthInMeters: 0.2
         }];
-        console.log("AR: Image tracking configured.");
-      } catch (e) {
-        console.warn("AR: Image tracking setup failed, falling back to basic AR.", e);
       }
 
       const arButton = ARButton.createButton(renderer, sessionInit);
@@ -875,11 +894,18 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
             <p className="text-sm text-purple-200 mb-6 leading-relaxed">
               Point your camera at the <span className="font-bold text-white underline">HOD Door Marker</span> to calibrate your position.
             </p>
-            <button 
-              onClick={() => setIsScanning(false)}
-              className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-full transition-colors border border-slate-700">
-              Skip Calibration
-            </button>
+            <div className="flex flex-col gap-2 w-full">
+              <button 
+                onClick={() => tryCalibrate()}
+                className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20">
+                Found Marker (Align Now)
+              </button>
+              <button 
+                onClick={() => setIsScanning(false)}
+                className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl transition-colors border border-slate-700">
+                Skip Calibration
+              </button>
+            </div>
           </div>
         </div>
       )}
