@@ -53,6 +53,11 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   const [isFarView, setIsFarView] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isCalibrated, setIsCalibrated] = useState(false);
+  const [distanceToDest, setDistanceToDest] = useState<number | null>(null);
+  const [nextInstruction, setNextInstruction] = useState<string>('');
+  const [hasArrived, setHasArrived] = useState(false);
+
+  const lastVibrationTimeRef = useRef<number>(0);
 
   // Position of our physical marker in the virtual world (e.g. HOD Door)
   const calibrationPoint = { x: -22.5, z: 0 }; 
@@ -360,6 +365,65 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
               }
             }
           }
+        }
+
+        // --- LIVE HUD & HAPTICS LOGIC ---
+        if (session && isCalibrated && activeSegment && activeSegment.positions.length > 0) {
+          const userPos = new THREE.Vector3();
+          camera.getWorldPosition(userPos);
+
+          // Get destination in world space
+          const lastPoint = activeSegment.positions[activeSegment.positions.length - 1];
+          const destPos = new THREE.Vector3(lastPoint[0], 0, lastPoint[1]);
+          if (floorPlanGroupRef.current) {
+            destPos.applyMatrix4(floorPlanGroupRef.current.matrixWorld);
+          }
+
+          const dist = userPos.distanceTo(destPos);
+          setDistanceToDest(dist);
+
+          // HAPTIC: Arrival (within 1.5m of final destination)
+          if (dist < 1.5 && !hasArrived) {
+            if (navigator.vibrate) navigator.vibrate([500, 100, 500]);
+            setHasArrived(true);
+            setNextInstruction("You have arrived!");
+          } else if (dist >= 1.5) {
+            setHasArrived(false);
+            
+            // Check for next turn (find the first waypoint ahead of user)
+            // We use a simpler version: just check distance to the next segment point
+            setNextInstruction(activeSegment.transition ? `Head to ${activeSegment.transition.name}` : `Follow the arrows`);
+
+            // HAPTIC: Turn Alert (if we detect a waypoint < 2m away that is a corner)
+            // For now, simple periodic pulse if moving correctly
+            const now = performance.now();
+            if (now - lastVibrationTimeRef.current > 15000) { // every 15s pulse to confirm tracking
+               // navigator.vibrate(50); 
+               // lastVibrationTimeRef.current = now;
+            }
+          }
+        }
+
+        // --- NEARBY LABELS LOGIC ---
+        if (labelsGroupRef.current && session && isCalibrated) {
+          const userPos = new THREE.Vector3();
+          camera.getWorldPosition(userPos);
+
+          labelsGroupRef.current.children.forEach((label) => {
+            const labelPos = new THREE.Vector3();
+            label.getWorldPosition(labelPos);
+            const dist = userPos.distanceTo(labelPos);
+            
+            // Only show labels within 5 meters
+            label.visible = dist < 5;
+            
+            if (label.visible) {
+              // Fade in/out based on distance
+              const mat = (label as THREE.Mesh).material as THREE.MeshBasicMaterial;
+              mat.opacity = THREE.MathUtils.lerp(1, 0, (dist - 2) / 3);
+              label.scale.setScalar(THREE.MathUtils.lerp(1, 0.5, (dist - 2) / 3));
+            }
+          });
         }
 
         // Animate existing arrows — float + pulse glow
@@ -815,6 +879,32 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
               className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-full transition-colors border border-slate-700">
               Skip Calibration
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Feature 3: Real-Time HUD */}
+      {isCalibrated && distanceToDest !== null && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm">
+          <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 p-4 rounded-3xl shadow-2xl flex items-center gap-4">
+            <div className="bg-purple-600/30 p-3 rounded-2xl">
+              <div className="w-6 h-6 border-2 border-purple-400 rounded-full animate-pulse flex items-center justify-center">
+                <div className="w-2 h-2 bg-purple-400 rounded-full" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-black text-white">
+                  {distanceToDest < 1 ? 'Arriving' : `${Math.round(distanceToDest)}m`}
+                </span>
+                <span className="text-xs font-medium text-slate-400 uppercase tracking-tight">
+                  to {activeSegment?.floorId === floorData.floorId ? 'Destination' : 'Next Floor'}
+                </span>
+              </div>
+              <p className="text-sm font-medium text-purple-300">
+                {nextInstruction} • {Math.ceil(distanceToDest / 1.2 / 60)} min walk
+              </p>
+            </div>
           </div>
         </div>
       )}
