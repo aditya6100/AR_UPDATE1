@@ -36,17 +36,16 @@ export const floor2Data = {
     { id: "f2_lab6",       name: "Lab 6",          center: [33.15, 3.65], connectedTo: ["f2_wp_hall_lab6"] },
 
     // --- BOTTOM ROW ---
-    { id: "f2_lift",       name: "Lift",           center: [0.89,  5.70], connectedTo: ["f2_wp_hall_lift"] },
+    { id: "f2_lift",       name: "Lift",           center: [0.89,  5.70], connectedTo: [] }, // NO CONNECTION
     { id: "f2_stairs_bot", name: "Stairs (Bot)",   center: [3.57,  5.70], connectedTo: ["f2_wp_hall_stairs_bot"] },
     { id: "f2_lab4",       name: "Lab 4",          center: [10.95, 5.70], connectedTo: ["f2_wp_hall_lab4"] },
     { id: "f2_lab5",       name: "Lab 5",          center: [20.54, 5.70], connectedTo: ["f2_wp_hall_lab5"] },
-    { id: "f2_women",      name: "Women Washroom", center: [25.86, 5.70], connectedTo: ["f2_wp_hall_women"] },
+    { id: "f2_women",      name: "Ladies Toilet",  center: [25.86, 5.70], connectedTo: ["f2_wp_hall_women"] },
     { id: "f2_gents",      name: "Men Washroom",   center: [38.11, 5.70], connectedTo: ["f2_wp_hall_gents"] },
   ],
 
   waypoints: [
-    { id: "f2_wp_hall_lift",       position: [0.89,  3.65], connectedTo: ["f2_wp_hall_stairs_bot"] },
-    { id: "f2_wp_hall_stairs_bot", position: [3.57,  3.65], connectedTo: ["f2_wp_hall_lift", "f2_wp_hall_lab1"] },
+    { id: "f2_wp_hall_stairs_bot", position: [3.57,  3.65], connectedTo: ["f2_wp_hall_lab1"] },
     { id: "f2_wp_hall_lab1",       position: [3.35,  3.65], connectedTo: ["f2_wp_hall_stairs_bot", "f2_wp_hall_lab2"] },
     { id: "f2_wp_hall_lab2",       position: [8.62,  3.65], connectedTo: ["f2_wp_hall_lab1", "f2_wp_hall_lab4"] },
     { id: "f2_wp_hall_lab4",       position: [10.95, 3.65], connectedTo: ["f2_wp_hall_lab2", "f2_wp_hall_lab3"] },

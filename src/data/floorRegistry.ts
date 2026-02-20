@@ -58,19 +58,6 @@ export const verticalConnectors: {
   floorWaypoints: Record<string, string>; // floorId → waypointId
 }[] = [
   {
-    name: 'Main Lift',
-    type: 'lift',
-    costPerFloor: 5,
-    floorWaypoints: {
-      f1: 'f1_wp_hall_lift',
-      f2: 'f2_wp_hall_lift',
-      f3: 'f3_wp_lift',
-      f4: 'f4_wp_hall_lift',
-      f5: 'f5_wp_hall_lift',
-      f6: 'f6_wp_hall_lift',
-    },
-  },
-  {
     name: 'Main Stairs (Bottom)',
     type: 'stairs',
     costPerFloor: 10,
@@ -88,9 +75,14 @@ export const verticalConnectors: {
     type: 'stairs',
     costPerFloor: 10,
     floorWaypoints: {
-      f1: 'f1_wp_hall_gents',
+      f1: 'f1_wp_hall_stairs_top',
       f2: 'f2_wp_hall_stairs_top',
       f3: 'f3_wp_stairs_top',
+      f4: 'f4_wp_hall_stairs_top',
+      f5: 'f5_wp_hall_lab12',
+      f6: 'f6_wp_hall_505',
+    },
+  },
       f4: 'f4_wp_hall_stairs_top',
       f5: 'f5_wp_hall_lab14',
       f6: 'f6_wp_hall_505',
