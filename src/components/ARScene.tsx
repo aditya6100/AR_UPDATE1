@@ -36,6 +36,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   const floorPlanGroupRef = useRef<THREE.Group | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const spheresRef = useRef<ArrowElement[]>([]);
+  const startPulseRef = useRef<THREE.Mesh | null>(null);
   const destinationBeaconRef = useRef<THREE.Group | null>(null);
   const lineRef = useRef<THREE.Line | null>(null);
   const animationIndexRef = useRef(0);
@@ -210,8 +211,8 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
       if (!group) return;
 
       // ── Scale the floor plan group to real-world metres ────────────────
-      // Set to 2.0 for 1:1 scale (if 1.5 only reached Lab 10).
-      const AR_SCALE = 2.0;
+      // Set to 2.5 for exact building alignment (if 2.0 still only reached Lab 10).
+      const AR_SCALE = 2.5;
       group.scale.set(AR_SCALE, AR_SCALE, AR_SCALE);
 
       // ── Position & Rotation: Align path to start in front of user ──────
@@ -322,17 +323,25 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
             shaft.scale.set(scale, scale, scale);
         });
 
+        // Animate start pulse
+        if (startPulseRef.current) {
+          const s = 1 + Math.sin(time * 4) * 0.2;
+          startPulseRef.current.scale.set(s, s, s);
+          (startPulseRef.current.material as THREE.MeshStandardMaterial).opacity = 0.5 + Math.sin(time * 4) * 0.5;
+        }
+
         // Animate destination beacon
         if (destinationBeaconRef.current) {
           const gem = destinationBeaconRef.current.children[3]; // Octahedron
           if (gem) {
-            gem.rotation.y += 0.02;
-            gem.position.y = 5.5 + Math.sin(time * 2) * 0.3;
+            gem.rotation.y += 0.03;
+            gem.rotation.x += 0.01;
+            gem.position.y = 7.0 + Math.sin(time * 2.5) * 0.5;
           }
-          const outerRing = destinationBeaconRef.current.children[1]; // Outer ring
-          if (outerRing) {
-            outerRing.rotation.z += 0.01;
-            outerRing.scale.setScalar(1 + Math.sin(time * 3) * 0.1);
+          const ring2 = destinationBeaconRef.current.children[1]; // Inner rotating ring
+          if (ring2) {
+            ring2.rotation.z += 0.02;
+            ring2.scale.setScalar(1.2 + Math.sin(time * 2) * 0.1);
           }
         }
 
@@ -530,13 +539,20 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   };
 
   const drawPath = (segment: PathSegment, floorPlanGroup: THREE.Group) => {
-    // ── Clear old arrows and beacon ──────────────────────────────────────────
+    // ── Clear old arrows, beacon and start pulse ──────────────────────────────
     spheresRef.current.forEach(entry => {
       floorPlanGroup.remove(entry.cone, entry.shaft, entry.ring);
       entry.coneGeo.dispose();  entry.shaftGeo.dispose();  entry.ringGeo.dispose();
       entry.coneMat.dispose();  entry.shaftMat.dispose();  entry.ringMat.dispose();
     });
     spheresRef.current = [];
+
+    if (startPulseRef.current) {
+        floorPlanGroup.remove(startPulseRef.current);
+        startPulseRef.current.geometry.dispose();
+        (startPulseRef.current.material as THREE.Material).dispose();
+        startPulseRef.current = null;
+    }
 
     if (destinationBeaconRef.current) {
       floorPlanGroup.remove(destinationBeaconRef.current);
@@ -569,47 +585,55 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
 
     if (pathPoints.length < 2) return;
 
+    // ── Build start pulse ring ──────────────────────────────────────────────
+    const startRingGeo = new THREE.TorusGeometry(0.8, 0.05, 12, 32);
+    const startRingMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 5 });
+    const startRing = new THREE.Mesh(startRingGeo, startRingMat);
+    startRing.rotation.x = -Math.PI / 2;
+    startRing.position.copy(pathPoints[0]).setY(0.01);
+    floorPlanGroup.add(startRing);
+    startPulseRef.current = startRing;
+
     // ── Build destination beacon ────────────────────────────────────────────
     const endPos = pathPoints[pathPoints.length - 1];
     const beaconGroup = new THREE.Group();
     
     // Glowing base ring
-    const torusGeo = new THREE.TorusGeometry(0.8, 0.08, 16, 48);
+    const torusGeo = new THREE.TorusGeometry(1.0, 0.1, 16, 48);
     const torusMat = new THREE.MeshStandardMaterial({ 
       color: 0x8b5cf6, 
       emissive: 0x8b5cf6, 
-      emissiveIntensity: 6 
+      emissiveIntensity: 8 
     });
     const ring = new THREE.Mesh(torusGeo, torusMat);
     ring.rotation.x = -Math.PI / 2;
     beaconGroup.add(ring);
 
-    // Outer rotating ring
-    const ring2Geo = new THREE.TorusGeometry(1.2, 0.04, 8, 32);
+    // Rotating ring
+    const ring2Geo = new THREE.TorusGeometry(1.5, 0.05, 8, 32);
     const ring2 = new THREE.Mesh(ring2Geo, torusMat);
     ring2.rotation.x = -Math.PI / 2;
-    ring2.userData.isRotating = true; // flag for custom animation if needed
     beaconGroup.add(ring2);
 
     // Glowing beam/pillar (transparent spire)
-    const beamGeo = new THREE.CylinderGeometry(0.05, 0.8, 5, 24, 1, true);
+    const beamGeo = new THREE.CylinderGeometry(0.05, 1.0, 6, 24, 1, true);
     const beamMat = new THREE.MeshStandardMaterial({ 
       color: 0xa78bfa, 
       emissive: 0xa78bfa, 
-      emissiveIntensity: 3, 
+      emissiveIntensity: 4, 
       transparent: true, 
-      opacity: 0.4,
+      opacity: 0.3,
       side: THREE.DoubleSide
     });
     const beam = new THREE.Mesh(beamGeo, beamMat);
-    beam.position.y = 2.5;
+    beam.position.y = 3;
     beaconGroup.add(beam);
 
     // Floating destination "gem"
-    const gemGeo = new THREE.OctahedronGeometry(0.4);
-    const gemMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xa78bfa, emissiveIntensity: 10 });
+    const gemGeo = new THREE.OctahedronGeometry(0.5);
+    const gemMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xa78bfa, emissiveIntensity: 12 });
     const gem = new THREE.Mesh(gemGeo, gemMat);
-    gem.position.y = 5.5;
+    gem.position.y = 7.0;
     beaconGroup.add(gem);
 
     beaconGroup.position.copy(endPos).setY(0.01);
@@ -617,6 +641,25 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     destinationBeaconRef.current = beaconGroup;
 
     // ── Build curve ─────────────────────────────────────────────────────────
+    const curve = new THREE.CatmullRomCurve3(pathPoints);
+    pathCurveRef.current = curve;
+
+    // More curve points = smoother arrow placement
+    const TOTAL_PTS = 300;
+    const curvePoints = curve.getPoints(TOTAL_PTS);
+    curvePointsGlobalRef.current = curvePoints;
+
+    // Glowing path line (visible in 3D view, hidden in AR)
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(curvePoints);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xC792EA, linewidth: 2 });
+    const line = new THREE.Line(lineGeo, lineMat);
+    line.userData.isPathLine = true;
+    floorPlanGroup.add(line);
+    lineRef.current = line;
+
+    // ── Place arrows immediately (all at once) ──────────────────────────────
+    const ARROW_SPACING = 4;  // Doubled density (was 8)
+    const isAR = rendererRef.current?.xr.isPresenting ?? false;
     const curve = new THREE.CatmullRomCurve3(pathPoints);
     pathCurveRef.current = curve;
 
