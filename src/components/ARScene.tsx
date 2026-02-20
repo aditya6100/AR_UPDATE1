@@ -51,7 +51,11 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   const endRoomIdRef  = useRef(endRoomId);
   
   const [isFarView, setIsFarView] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isCalibrated, setIsCalibrated] = useState(false);
 
+  // Position of our physical marker in the virtual world (e.g. HOD Door)
+  const calibrationPoint = { x: -22.5, z: 0 }; 
 
   useEffect(() => {
     console.log("isFarView changed:", isFarView);
@@ -162,7 +166,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     // 'local-floor' places origin at floor level — essential for ground-level arrows
     const arButton = ARButton.createButton(renderer, {
       requiredFeatures: ['hit-test'],
-      optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar'],
+      optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar', 'image-tracking'],
       domOverlay: { root: document.body },
     });
     arButtonRef.current = arButton;
@@ -206,13 +210,15 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
 
     renderer.xr.addEventListener('sessionstart', () => {
       if (onSessionStateChange) onSessionStateChange(true);
+      setIsScanning(true);
+      setIsCalibrated(false);
 
       const group = floorPlanGroupRef.current;
       if (!group) return;
 
       // ── Scale the floor plan group to real-world metres ────────────────
-      // Set to 2.5 for exact building alignment (if 2.0 still only reached Lab 10).
-      const AR_SCALE = 2.5;
+      // Set to 1.0 for 1:1 scale (we will align via marker).
+      const AR_SCALE = 1.0;
       group.scale.set(AR_SCALE, AR_SCALE, AR_SCALE);
 
       // ── Position & Rotation: Align path to start in front of user ──────
@@ -302,6 +308,40 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
 
     const animate = () => {
         controls.update();
+
+        // --- IMAGE TRACKING ALIGNMENT ---
+        const session = renderer.xr.getSession();
+        const frame = renderer.xr.getFrame();
+        if (session && frame && isScanning && !isCalibrated && floorPlanGroupRef.current) {
+          // @ts-ignore - getImageTrackingResults is newer WebXR
+          const results = frame.getImageTrackingResults?.() || [];
+          for (const result of results) {
+            if (result.trackingState === 'tracked') {
+              const referenceSpace = renderer.xr.getReferenceSpace();
+              const pose = frame.getPose(result.imageSpace, referenceSpace!);
+              if (pose) {
+                const { position, orientation } = pose.transform;
+                const group = floorPlanGroupRef.current;
+
+                // 1. Position the group at the marker's real location
+                group.position.set(position.x, position.y, position.z);
+                group.quaternion.set(orientation.x, orientation.y, orientation.z, orientation.w);
+
+                // 2. Offset the group so the virtual coordinate (calibrationPoint) 
+                // matches the marker's physical center.
+                // We use -x and -z because we are shifting the WORLD relative to the marker.
+                group.translateX(-calibrationPoint.x);
+                group.translateZ(-calibrationPoint.z);
+
+                // 3. Mark as calibrated and stop scanning
+                setIsCalibrated(true);
+                setIsScanning(false);
+                // Vibrate if supported
+                if (navigator.vibrate) navigator.vibrate(200);
+              }
+            }
+          }
+        }
 
         // Animate existing arrows — float + pulse glow
         const time = performance.now() * 0.001;
@@ -729,6 +769,30 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   return (
     <>
       <div ref={containerRef} className="fixed inset-0 z-0" />
+      
+      {isScanning && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-purple-500/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-xs text-center">
+            <div className="relative w-24 h-24 mb-6">
+              <div className="absolute inset-0 border-4 border-purple-500 rounded-2xl animate-pulse" />
+              <div className="absolute inset-4 border-2 border-purple-400/50 rounded-lg animate-ping" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-4xl text-purple-400">📷</span>
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Aligning World</h2>
+            <p className="text-sm text-purple-200 mb-6 leading-relaxed">
+              Point your camera at the <span className="font-bold text-white underline">HOD Door Marker</span> to calibrate your position.
+            </p>
+            <button 
+              onClick={() => setIsScanning(false)}
+              className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-full transition-colors border border-slate-700">
+              Skip Calibration
+            </button>
+          </div>
+        </div>
+      )}
+
       {showUIView && (
         <button
             onClick={() => {
