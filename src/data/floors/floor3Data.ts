@@ -23,14 +23,14 @@ export const floor3Data = {
   ],
 
   waypoints: [
-    { id: "f3_wp_hall_lift",       position: [-24, 0], connectedTo: ["f3_wp_hall_stairs_bot", "f2_wp_lift", "f4_wp_lift"] },
-    { id: "f3_wp_hall_stairs_bot", position: [-20, 0], connectedTo: ["f3_wp_hall_lift", "f3_wp_hall_hod", "f2_wp_stairs_bot", "f4_wp_stairs_bot"] },
+    { id: "f3_wp_hall_lift",       position: [-24, 0], connectedTo: ["f3_wp_hall_stairs_bot"] },
+    { id: "f3_wp_hall_stairs_bot", position: [-20, 0], connectedTo: ["f3_wp_hall_lift", "f3_wp_hall_hod"] },
     { id: "f3_wp_hall_hod",        position: [-22.5,0],connectedTo: ["f3_wp_hall_stairs_bot", "f3_wp_hall_dlib"] },
     { id: "f3_wp_hall_dlib",       position: [-16.5,0],connectedTo: ["f3_wp_hall_hod", "f3_wp_hall_lab7"] },
     { id: "f3_wp_hall_lab7",       position: [-10, 0], connectedTo: ["f3_wp_hall_dlib", "f3_wp_hall_lab8"] },
     { id: "f3_wp_hall_lab8",       position: [  1, 0], connectedTo: ["f3_wp_hall_lab7", "f3_wp_hall_women"] },
     { id: "f3_wp_hall_women",      position: [7.5, 0], connectedTo: ["f3_wp_hall_lab8", "f3_wp_hall_gents"] },
-    { id: "f3_wp_hall_gents",      position: [14.5, 0], connectedTo: ["f3_wp_hall_women", "f3_wp_hall_lab9", "f2_wp_stairs_top", "f4_wp_stairs_top"] },
+    { id: "f3_wp_hall_gents",      position: [14.5, 0], connectedTo: ["f3_wp_hall_women", "f3_wp_hall_lab9"] },
     { id: "f3_wp_hall_lab9",       position: [20,  0], connectedTo: ["f3_wp_hall_gents"] },
   ],
 

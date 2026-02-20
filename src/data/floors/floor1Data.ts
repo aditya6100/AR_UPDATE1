@@ -20,13 +20,13 @@ export const floor1Data = {
   ],
 
   waypoints: [
-    { id: "f1_wp_hall_lift",       position: [-24, 0], connectedTo: ["f1_wp_hall_stairs_bot", "f2_wp_lift"] },
-    { id: "f1_wp_hall_stairs_bot", position: [-20, 0], connectedTo: ["f1_wp_hall_lift", "f1_wp_hall_gymkhana", "f2_wp_stairs_bot"] },
+    { id: "f1_wp_hall_lift",       position: [-24, 0], connectedTo: ["f1_wp_hall_stairs_bot"] },
+    { id: "f1_wp_hall_stairs_bot", position: [-20, 0], connectedTo: ["f1_wp_hall_lift", "f1_wp_hall_gymkhana"] },
     { id: "f1_wp_hall_gymkhana",   position: [-22.5,0],connectedTo: ["f1_wp_hall_stairs_bot", "f1_wp_hall_g1"] },
     { id: "f1_wp_hall_g1",         position: [-16.5,0],connectedTo: ["f1_wp_hall_gymkhana", "f1_wp_hall_g2"] },
     { id: "f1_wp_hall_g2",         position: [-10, 0], connectedTo: ["f1_wp_hall_g1", "f1_wp_hall_g4"] },
     { id: "f1_wp_hall_g4",         position: [  1, 0], connectedTo: ["f1_wp_hall_g2", "f1_wp_hall_gents"] },
-    { id: "f1_wp_hall_gents",      position: [14.5, 0], connectedTo: ["f1_wp_hall_g4", "f2_wp_stairs_top"] },
+    { id: "f1_wp_hall_gents",      position: [14.5, 0], connectedTo: ["f1_wp_hall_g4"] },
   ],
 
   walls: [

@@ -19,13 +19,13 @@ export const floor4Data = {
   ],
 
   waypoints: [
-    { id: "f4_wp_hall_lift",       position: [-24, 0], connectedTo: ["f4_wp_hall_stairs_bot", "f3_wp_lift", "f5_wp_lift"] },
-    { id: "f4_wp_hall_stairs_bot", position: [-20, 0], connectedTo: ["f4_wp_hall_lift", "f4_wp_hall_301", "f3_wp_stairs_bot", "f5_wp_stairs_bot"] },
+    { id: "f4_wp_hall_lift",       position: [-24, 0], connectedTo: ["f4_wp_hall_stairs_bot"] },
+    { id: "f4_wp_hall_stairs_bot", position: [-20, 0], connectedTo: ["f4_wp_hall_lift", "f4_wp_hall_301"] },
     { id: "f4_wp_hall_301",        position: [-22.5,0],connectedTo: ["f4_wp_hall_stairs_bot", "f4_wp_hall_302"] },
     { id: "f4_wp_hall_302",        position: [-16.5,0],connectedTo: ["f4_wp_hall_301", "f4_wp_hall_303"] },
     { id: "f4_wp_hall_303",        position: [-10, 0], connectedTo: ["f4_wp_hall_302", "f4_wp_hall_306"] },
     { id: "f4_wp_hall_306",        position: [  1, 0], connectedTo: ["f4_wp_hall_303", "f4_wp_hall_gents"] },
-    { id: "f4_wp_hall_gents",      position: [14.5, 0], connectedTo: ["f4_wp_hall_306", "f3_wp_stairs_top", "f5_wp_stairs_top"] },
+    { id: "f4_wp_hall_gents",      position: [14.5, 0], connectedTo: ["f4_wp_hall_306"] },
   ],
 
   walls: [

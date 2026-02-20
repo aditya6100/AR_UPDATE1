@@ -18,12 +18,12 @@ export const floor6Data = {
   ],
 
   waypoints: [
-    { id: "f6_wp_hall_lift",       position: [-24, 0], connectedTo: ["f6_wp_hall_stairs_bot", "f5_wp_lift"] },
-    { id: "f6_wp_hall_stairs_bot", position: [-20, 0], connectedTo: ["f6_wp_hall_lift", "f6_wp_hall_501", "f5_wp_stairs_bot"] },
+    { id: "f6_wp_hall_lift",       position: [-24, 0], connectedTo: ["f6_wp_hall_stairs_bot"] },
+    { id: "f6_wp_hall_stairs_bot", position: [-20, 0], connectedTo: ["f6_wp_hall_lift", "f6_wp_hall_501"] },
     { id: "f6_wp_hall_501",        position: [-22.5,0],connectedTo: ["f6_wp_hall_stairs_bot", "f6_wp_hall_502"] },
     { id: "f6_wp_hall_502",        position: [-16.5,0],connectedTo: ["f6_wp_hall_501", "f6_wp_hall_503"] },
     { id: "f6_wp_hall_503",        position: [-10, 0], connectedTo: ["f6_wp_hall_502", "f6_wp_hall_505"] },
-    { id: "f6_wp_hall_505",        position: [  1, 0], connectedTo: ["f6_wp_hall_503", "f5_wp_stairs_top"] },
+    { id: "f6_wp_hall_505",        position: [  1, 0], connectedTo: ["f6_wp_hall_503"] },
   ],
 
   walls: [
