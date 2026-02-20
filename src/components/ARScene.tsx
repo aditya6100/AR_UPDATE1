@@ -22,6 +22,7 @@ interface ArrowElement {
 interface ARSceneProps {
   floorData: FloorData;
   activeSegment: PathSegment | null;
+  pathSegments: PathSegment[]; // 👈 Added
   startRoomId: string | null;
   endRoomId: string | null;
   onSessionStateChange?: (active: boolean) => void;
@@ -29,7 +30,7 @@ interface ARSceneProps {
   showUIView: boolean;
 }
 
-export default function ARScene({ floorData, activeSegment, startRoomId, endRoomId, onSessionStateChange, showARButton, showUIView }: ARSceneProps) {
+export default function ARScene({ floorData, activeSegment, pathSegments, startRoomId, endRoomId, onSessionStateChange, showARButton, showUIView }: ARSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -57,6 +58,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   const [isCalibrated, setIsCalibrated] = useState(false);
   const [activeMarkerInfo, setActiveMarkerInfo] = useState<{ label: string; floorId: string } | null>(null);
   const [distanceToDest, setDistanceToDest] = useState<number | null>(null);
+  const [totalDistanceRemaining, setTotalDistanceRemaining] = useState<number | null>(null);
   const [nextInstruction, setNextInstruction] = useState<string>('');
   const [hasArrived, setHasArrived] = useState(false);
 
@@ -424,35 +426,46 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
           const userPos = new THREE.Vector3();
           camera.getWorldPosition(userPos);
 
-          // Get destination in world space
+          // 1. Distance on current floor (from user to segment end)
           const lastPoint = activeSegment.positions[activeSegment.positions.length - 1];
-          const destPos = new THREE.Vector3(lastPoint[0], 0, lastPoint[1]);
+          const currentFloorEnd = new THREE.Vector3(lastPoint[0], 0, lastPoint[1]);
           if (floorPlanGroupRef.current) {
-            destPos.applyMatrix4(floorPlanGroupRef.current.matrixWorld);
+            currentFloorEnd.applyMatrix4(floorPlanGroupRef.current.matrixWorld);
+          }
+          const distCurrentFloor = userPos.distanceTo(currentFloorEnd);
+
+          // 2. Sum up lengths of all SUBSEQUENT segments
+          let subseqDist = 0;
+          const currentSegIdx = pathSegments.findIndex(s => s.floorId === floorData.floorId);
+          if (currentSegIdx !== -1) {
+            for (let i = currentSegIdx + 1; i < pathSegments.length; i++) {
+              const seg = pathSegments[i];
+              // Simple segment length calculation
+              for (let j = 1; j < seg.positions.length; j++) {
+                const pA = seg.positions[j-1];
+                const pB = seg.positions[j];
+                subseqDist += Math.sqrt(Math.pow(pB[0]-pA[0], 2) + Math.pow(pB[1]-pA[1], 2));
+              }
+              // Add floor jump cost (approx 5m for stairs)
+              subseqDist += 5;
+            }
           }
 
-          const dist = userPos.distanceTo(destPos);
-          setDistanceToDest(dist);
+          const totalDist = distCurrentFloor + subseqDist;
+          setDistanceToDest(distCurrentFloor); // distance to end of THIS floor
+          setTotalDistanceRemaining(totalDist); // distance to final goal
 
           // HAPTIC: Arrival (within 1.5m of final destination)
-          if (dist < 1.5 && !hasArrived) {
+          const isFinalFloor = currentSegIdx === pathSegments.length - 1;
+          if (isFinalFloor && totalDist < 1.5 && !hasArrived) {
             if (navigator.vibrate) navigator.vibrate([500, 100, 500]);
             setHasArrived(true);
             setNextInstruction("You have arrived!");
-          } else if (dist >= 1.5) {
+          } else if (totalDist >= 1.5) {
             setHasArrived(false);
-            
-            // Check for next turn (find the first waypoint ahead of user)
-            // We use a simpler version: just check distance to the next segment point
-            setNextInstruction(activeSegment.transition ? `Head to ${activeSegment.transition.name}` : `Follow the arrows`);
-
-            // HAPTIC: Turn Alert (if we detect a waypoint < 2m away that is a corner)
-            // For now, simple periodic pulse if moving correctly
-            const now = performance.now();
-            if (now - lastVibrationTimeRef.current > 15000) { // every 15s pulse to confirm tracking
-               // navigator.vibrate(50); 
-               // lastVibrationTimeRef.current = now;
-            }
+            setNextInstruction(activeSegment.transition 
+              ? `Take ${activeSegment.transition.name} to ${activeSegment.transition.toFloor.replace('f','Floor ')}` 
+              : `Follow arrows to Destination`);
           }
         }
 
@@ -1055,7 +1068,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
       )}
 
       {/* Feature 3: Real-Time HUD */}
-      {isCalibrated && distanceToDest !== null && (
+      {isCalibrated && totalDistanceRemaining !== null && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm">
           <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 p-4 rounded-3xl shadow-2xl flex items-center gap-4">
             <div className="bg-purple-600/30 p-3 rounded-2xl">
@@ -1064,16 +1077,20 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
               </div>
             </div>
             <div className="flex-1">
-              <div className="flex items-baseline gap-1.5">
+              <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-black text-white">
-                  {distanceToDest < 1 ? 'Arriving' : `${Math.round(distanceToDest)}m`}
+                  {totalDistanceRemaining < 1.5 ? 'Arrived' : `${Math.round(totalDistanceRemaining)}m`}
                 </span>
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-tight">
-                  to {activeSegment?.floorId === floorData.floorId ? 'Destination' : 'Next Floor'}
-                </span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
+                
+                {distanceToDest !== null && Math.round(distanceToDest) !== Math.round(totalDistanceRemaining) && (
+                  <span className="text-xs font-medium text-purple-400/80 ml-auto">
+                    {Math.round(distanceToDest)}m this floor
+                  </span>
+                )}
               </div>
               <p className="text-sm font-medium text-purple-300">
-                {nextInstruction} • {Math.ceil(distanceToDest / 1.2 / 60)} min walk
+                {nextInstruction} • {Math.ceil(totalDistanceRemaining / 1.2 / 60)} min walk
               </p>
               {activeMarkerInfo && (
                 <p className="text-[10px] text-green-400 font-bold uppercase mt-1">

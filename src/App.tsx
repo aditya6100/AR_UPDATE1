@@ -121,6 +121,7 @@ function App() {
         <ARScene
           floorData={activeFloorData}
           activeSegment={activeSegment}
+          pathSegments={pathSegments}
           startRoomId={startFloorId === activeFloorId ? startRoomId : null}
           endRoomId={endFloorId === activeFloorId ? endRoomId : null}
           onSessionStateChange={setIsARActive}
