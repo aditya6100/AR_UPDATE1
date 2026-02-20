@@ -73,7 +73,7 @@ export const verticalConnectors: {
       f1: 'f1_wp_hall_gents',
       f2: 'f2_wp_hall_stairs_top',
       f3: 'f3_wp_stairs_top',
-      f4: 'f4_wp_hall_gents',
+      f4: 'f4_wp_hall_stairs_top',
       f5: 'f5_wp_hall_lab14',
       f6: 'f6_wp_hall_505',
     },

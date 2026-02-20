@@ -1,5 +1,6 @@
 // =============================================================
-// Floor 4 — 3rd Floor (301-306, Gents Toilet)
+// Floor 4 — 3rd Floor (Classrooms 301-306)
+// Structure mirrors Floor 3 (CSE) exactly as requested.
 // =============================================================
 
 export const floor4Data = {
@@ -7,54 +8,86 @@ export const floor4Data = {
   floorNumber: 4,
   floorName: "3rd Floor",
 
+  // ── GREEN CORRIDOR / MIDDLE PORTION POLYGON ───────────────────────────
+  corridorPolygon: [
+    [ 0.00,  3.20],  // top-left
+    [24.54,  3.20],  // corridor top → Room303/Stairs boundary
+    [24.54,  2.35],  // step UP
+    [27.54,  2.35],  // Stairs box corner
+    [27.54,  3.20],  // step back down
+    [27.54,  3.20],  // jog right to Room306
+    [38.98,  3.20],  // right edge top
+    [38.98,  4.10],  // right edge bottom
+    [27.17,  4.10],  // Room306 boundary
+    [ 5.36,  4.10],  // corridor bottom → Stairs RHS
+    [ 5.36,  7.30],  // step DOWN column
+    [ 0.00,  7.30],  // left building bottom
+    [ 0.00,  4.10],  // left wall back up
+  ] as [number, number][],
+
+  corridorColor: '#2ecc40',
+
   rooms: [
-    { id: "f4_301",        name: "Classroom 301",  center: [-22.5, -5.25], connectedTo: ["f4_wp_hall_301"] },
-    { id: "f4_302",        name: "Classroom 302",  center: [-16.5, -5.25], connectedTo: ["f4_wp_hall_302"] },
-    { id: "f4_303",        name: "Classroom 303",  center: [-10,   -5.25], connectedTo: ["f4_wp_hall_303"] },
-    { id: "f4_304",        name: "Classroom 304",  center: [ -4,   -5.25], connectedTo: ["f4_wp_hall_303"] },
-    { id: "f4_306",        name: "Classroom 306",  center: [  1.5, -5.25], connectedTo: ["f4_wp_hall_306"] },
-    { id: "f4_gents",      name: "Gents Toilet",   center: [ 14.5,  5.25], connectedTo: ["f4_wp_hall_gents"] },
-    { id: "f4_lift",       name: "Lift",           center: [-24,    5.25], connectedTo: ["f4_wp_hall_lift"] },
-    { id: "f4_stairs_bot", name: "Stairs (Bot)",   center: [-20,    5.25], connectedTo: ["f4_wp_hall_stairs_bot"] },
+    // --- TOP ROW ---
+    { id: "f4_301",        name: "Classroom 301",  center: [3.35,  1.60], connectedTo: ["f4_wp_hall_301"] },
+    { id: "f4_302",        name: "Classroom 302",  center: [8.62,  1.60], connectedTo: ["f4_wp_hall_302"] },
+    { id: "f4_303",        name: "Classroom 303",  center: [17.54, 1.60], connectedTo: ["f4_wp_hall_303"] },
+    { id: "f4_stairs_top", name: "Stairs (Top)",   center: [26.04, 1.10], connectedTo: ["f4_wp_hall_stairs_top"] },
+    { id: "f4_306",        name: "Classroom 306",  center: [33.15, 3.65], connectedTo: ["f4_wp_hall_306"] },
+
+    // --- BOTTOM ROW ---
+    { id: "f4_lift",       name: "Lift",           center: [0.89,  5.70], connectedTo: ["f4_wp_hall_lift"] },
+    { id: "f4_stairs_bot", name: "Stairs (Bot)",   center: [3.57,  5.70], connectedTo: ["f4_wp_hall_stairs_bot"] },
+    { id: "f4_304",        name: "Classroom 304",  center: [10.95, 5.70], connectedTo: ["f4_wp_hall_304"] },
+    { id: "f4_305",        name: "Classroom 305",  center: [20.54, 5.70], connectedTo: ["f4_wp_hall_305"] },
+    { id: "f4_women",      name: "Ladies Toilet",  center: [25.86, 5.70], connectedTo: ["f4_wp_hall_women"] },
+    { id: "f4_gents",      name: "Men Washroom",   center: [38.11, 5.70], connectedTo: ["f4_wp_hall_gents"] },
   ],
 
   waypoints: [
-    { id: "f4_wp_hall_lift",       position: [-24, 0], connectedTo: ["f4_wp_hall_stairs_bot"] },
-    { id: "f4_wp_hall_stairs_bot", position: [-20, 0], connectedTo: ["f4_wp_hall_lift", "f4_wp_hall_301"] },
-    { id: "f4_wp_hall_301",        position: [-22.5,0],connectedTo: ["f4_wp_hall_stairs_bot", "f4_wp_hall_302"] },
-    { id: "f4_wp_hall_302",        position: [-16.5,0],connectedTo: ["f4_wp_hall_301", "f4_wp_hall_303"] },
-    { id: "f4_wp_hall_303",        position: [-10, 0], connectedTo: ["f4_wp_hall_302", "f4_wp_hall_306"] },
-    { id: "f4_wp_hall_306",        position: [  1, 0], connectedTo: ["f4_wp_hall_303", "f4_wp_hall_gents"] },
-    { id: "f4_wp_hall_gents",      position: [14.5, 0], connectedTo: ["f4_wp_hall_306"] },
+    { id: "f4_wp_hall_lift",       position: [0.89,  3.65], connectedTo: ["f4_wp_hall_stairs_bot"] },
+    { id: "f4_wp_hall_stairs_bot", position: [3.57,  3.65], connectedTo: ["f4_wp_hall_lift", "f4_wp_hall_301"] },
+    { id: "f4_wp_hall_301",        position: [3.35,  3.65], connectedTo: ["f4_wp_hall_stairs_bot", "f4_wp_hall_302"] },
+    { id: "f4_wp_hall_302",        position: [8.62,  3.65], connectedTo: ["f4_wp_hall_301", "f4_wp_hall_304"] },
+    { id: "f4_wp_hall_304",        position: [10.95, 3.65], connectedTo: ["f4_wp_hall_302", "f4_wp_hall_303"] },
+    { id: "f4_wp_hall_303",        position: [17.54, 3.65], connectedTo: ["f4_wp_hall_304", "f4_wp_hall_305"] },
+    { id: "f4_wp_hall_305",        position: [20.54, 3.65], connectedTo: ["f4_wp_hall_303", "f4_wp_hall_stairs_top"] },
+    { id: "f4_wp_hall_stairs_top", position: [26.04, 3.65], connectedTo: ["f4_wp_hall_305", "f4_wp_hall_women"] },
+    { id: "f4_wp_hall_women",      position: [25.86, 3.65], connectedTo: ["f4_wp_hall_stairs_top", "f4_wp_hall_306"] },
+    { id: "f4_wp_hall_306",        position: [33.15, 3.65], connectedTo: ["f4_wp_hall_women", "f4_wp_hall_gents"] },
+    { id: "f4_wp_hall_gents",      position: [38.11, 3.65], connectedTo: ["f4_wp_hall_306"] },
   ],
 
   walls: [
-    { p1: [-26, -9], p2: [ 26, -9] },
-    { p1: [ 26, -9], p2: [ 26,  1.5] },
-    { p1: [ 26,  1.5], p2: [ 18,  1.5] },
-    { p1: [ 18,  1.5], p2: [ 18,  9] },
-    { p1: [ 18,  9],  p2: [-26,  9] },
-    { p1: [-26,  9],  p2: [-26, -9] },
-    { p1: [-26, -1.5], p2: [ 26, -1.5] },
-    { p1: [-26,  1.5], p2: [ 26,  1.5] },
-    { p1: [-19, -9], p2: [-19, -1.5] },
-    { p1: [-14, -9], p2: [-14, -1.5] },
-    { p1: [ -6, -9], p2: [ -6, -1.5] },
-    { p1: [ -2, -9], p2: [ -2, -1.5] },
-    { p1: [  5, -9], p2: [  5, -1.5] },
-    { p1: [  9, -9], p2: [  9, -1.5] },
-    { p1: [-22,  1.5], p2: [-22,  9] },
-    { p1: [-18,  1.5], p2: [-18,  9] },
-    { p1: [-20,  1.5], p2: [-20,  9] },
-    { p1: [  4,  1.5], p2: [  4,  9] },
-    { p1: [ 11,  1.5], p2: [ 11,  9] },
+    // Outer
+    { p1: [0.00, 0.00], p2: [24.54, 0.00] },
+    { p1: [27.54, 0.00], p2: [38.98, 0.00] },
+    { p1: [38.98, 0.00], p2: [38.98, 7.30] },
+    { p1: [38.98, 7.30], p2: [5.36, 7.30] },
+    { p1: [1.78, 7.30], p2: [0.00, 7.30] },
+    { p1: [0.00, 7.30], p2: [0.00, 0.00] },
+    // Horizontal Corridor
+    { p1: [0.00, 3.20], p2: [24.54, 3.20] },
+    { p1: [27.54, 3.20], p2: [38.98, 3.20] },
+    { p1: [0.00, 4.10], p2: [38.98, 4.10] },
+    // Top dividers
+    { p1: [6.70, 0.00], p2: [6.70, 3.20] },
+    { p1: [13.54, 0.00], p2: [13.54, 3.20] },
+    { p1: [24.54, 0.00], p2: [24.54, 3.20] },
+    { p1: [27.54, 0.00], p2: [27.54, 3.20] },
+    // Bottom dividers
+    { p1: [1.78, 4.10], p2: [1.78, 7.30] },
+    { p1: [5.36, 4.10], p2: [5.36, 7.30] },
+    { p1: [16.54, 4.10], p2: [16.54, 7.30] },
+    { p1: [24.54, 4.10], p2: [24.54, 7.30] },
+    { p1: [32.38, 4.10], p2: [32.38, 7.30] },
   ],
 
-  wallHeight: 3,
-  wallThickness: 0.2,
+  wallHeight: 3.00,
+  wallThickness: 0.15,
 
   floorMessages: [
-    { id: "m1", type: "welcome", text: "3RD FLOOR - CLASSROOMS",    position: [-24, 2] },
-    { id: "m2", type: "quote",   text: "Knowledge is Power 📚",     position: [0, 0] },
+    { id: "m1", type: "welcome", text: "3RD FLOOR CLASSROOMS", position: [2, 3.65] },
+    { id: "m2", type: "quote",   text: "Knowledge is Power 📚", position: [15, 3.65] },
   ],
 };
