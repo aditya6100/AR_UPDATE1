@@ -175,6 +175,16 @@ export function findMultiFloorPath(
   const pathIds = findUnifiedPath(startWpId, endWpId, graph);
   if (pathIds.length === 0) return [];
 
+  // Find room centers to add to the path
+  let startRoomPos: [number, number] | null = null;
+  let endRoomPos: [number, number] | null = null;
+  for (const floor of allFloorData) {
+    const sR = floor.rooms.find(r => r.id === startRoomId);
+    if (sR) startRoomPos = sR.center;
+    const eR = floor.rooms.find(r => r.id === endRoomId);
+    if (eR) endRoomPos = eR.center;
+  }
+
   // Split path into per-floor segments
   const segments: PathSegment[] = [];
   let currentSegment: PathSegment | null = null;
@@ -210,11 +220,20 @@ export function findMultiFloorPath(
         waypointIds: [wpId],
         positions: [[node.position[0], node.position[1]]],
       };
+      // Add start room center to the very first segment
+      if (segments.length === 0 && startRoomPos) {
+        currentSegment.positions.unshift(startRoomPos);
+      }
       segments.push(currentSegment);
     } else {
       currentSegment.waypointIds.push(wpId);
       currentSegment.positions.push([node.position[0], node.position[1]]);
     }
+  }
+
+  // Add end room center to the very last segment
+  if (segments.length > 0 && endRoomPos) {
+    segments[segments.length - 1].positions.push(endRoomPos);
   }
 
   // Tag start/end floor IDs for context

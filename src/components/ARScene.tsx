@@ -210,8 +210,8 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
       if (!group) return;
 
       // ── Scale the floor plan group to real-world metres ────────────────
-      // Set to 1.3 for adjusted scale (balancing previous 1.0 and 1.5).
-      const AR_SCALE = 1.3;
+      // Set to 2.0 for 1:1 scale (if 1.5 only reached Lab 10).
+      const AR_SCALE = 2.0;
       group.scale.set(AR_SCALE, AR_SCALE, AR_SCALE);
 
       // ── Position & Rotation: Align path to start in front of user ──────
@@ -321,6 +321,20 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
             cone.scale.set(scale, scale, scale);
             shaft.scale.set(scale, scale, scale);
         });
+
+        // Animate destination beacon
+        if (destinationBeaconRef.current) {
+          const gem = destinationBeaconRef.current.children[3]; // Octahedron
+          if (gem) {
+            gem.rotation.y += 0.02;
+            gem.position.y = 5.5 + Math.sin(time * 2) * 0.3;
+          }
+          const outerRing = destinationBeaconRef.current.children[1]; // Outer ring
+          if (outerRing) {
+            outerRing.rotation.z += 0.01;
+            outerRing.scale.setScalar(1 + Math.sin(time * 3) * 0.1);
+          }
+        }
 
         renderer.render(scene, camera);
     };
@@ -559,25 +573,44 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     const endPos = pathPoints[pathPoints.length - 1];
     const beaconGroup = new THREE.Group();
     
-    // Glowing ring on ground
-    const torusGeo = new THREE.TorusGeometry(0.5, 0.05, 16, 32);
-    const torusMat = new THREE.MeshStandardMaterial({ color: 0xa78bfa, emissive: 0xa78bfa, emissiveIntensity: 5 });
+    // Glowing base ring
+    const torusGeo = new THREE.TorusGeometry(0.8, 0.08, 16, 48);
+    const torusMat = new THREE.MeshStandardMaterial({ 
+      color: 0x8b5cf6, 
+      emissive: 0x8b5cf6, 
+      emissiveIntensity: 6 
+    });
     const ring = new THREE.Mesh(torusGeo, torusMat);
     ring.rotation.x = -Math.PI / 2;
     beaconGroup.add(ring);
 
-    // Glowing beam/pillar
-    const beamGeo = new THREE.CylinderGeometry(0.1, 0.5, 3, 16);
+    // Outer rotating ring
+    const ring2Geo = new THREE.TorusGeometry(1.2, 0.04, 8, 32);
+    const ring2 = new THREE.Mesh(ring2Geo, torusMat);
+    ring2.rotation.x = -Math.PI / 2;
+    ring2.userData.isRotating = true; // flag for custom animation if needed
+    beaconGroup.add(ring2);
+
+    // Glowing beam/pillar (transparent spire)
+    const beamGeo = new THREE.CylinderGeometry(0.05, 0.8, 5, 24, 1, true);
     const beamMat = new THREE.MeshStandardMaterial({ 
       color: 0xa78bfa, 
       emissive: 0xa78bfa, 
-      emissiveIntensity: 2, 
+      emissiveIntensity: 3, 
       transparent: true, 
-      opacity: 0.6 
+      opacity: 0.4,
+      side: THREE.DoubleSide
     });
     const beam = new THREE.Mesh(beamGeo, beamMat);
-    beam.position.y = 1.5;
+    beam.position.y = 2.5;
     beaconGroup.add(beam);
+
+    // Floating destination "gem"
+    const gemGeo = new THREE.OctahedronGeometry(0.4);
+    const gemMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xa78bfa, emissiveIntensity: 10 });
+    const gem = new THREE.Mesh(gemGeo, gemMat);
+    gem.position.y = 5.5;
+    beaconGroup.add(gem);
 
     beaconGroup.position.copy(endPos).setY(0.01);
     floorPlanGroup.add(beaconGroup);
