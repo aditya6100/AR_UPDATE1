@@ -232,18 +232,26 @@ export function findMultiFloorPath(
 
   // Final touches for start and end segments
   if (segments.length > 0) {
-    // 1. First segment: Add room center and 'behind' point
+      // 1. First segment: Add room center and 'behind' point
     if (startRoomPos) {
       const firstSeg = segments[0];
       const firstWpPos = firstSeg.positions[0];
       const dx = startRoomPos[0] - firstWpPos[0];
       const dz = startRoomPos[1] - firstWpPos[1];
-      const mag = Math.sqrt(dx * dx + dz * dz) || 1;
-      const behind: [number, number] = [startRoomPos[0] + (dx/mag)*1.5, startRoomPos[1] + (dz/mag)*1.5];
+      const mag = Math.sqrt(dx * dx + dz * dz);
       
-      // Order: Behind -> Center -> CorridorWaypoints
-      firstSeg.positions.unshift(startRoomPos);
-      firstSeg.positions.unshift(behind);
+      // Safety check: ensure magnitude is valid and non-zero
+      if (mag > 0.01) {
+        const behind: [number, number] = [
+          startRoomPos[0] + (dx / mag) * 1.5, 
+          startRoomPos[1] + (dz / mag) * 1.5
+        ];
+        firstSeg.positions.unshift(startRoomPos);
+        firstSeg.positions.unshift(behind);
+      } else {
+        // Fallback: just add room center if we are on top of the waypoint
+        firstSeg.positions.unshift(startRoomPos);
+      }
     }
 
     // 2. Last segment: Add end room center

@@ -384,6 +384,13 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     window.addEventListener('resize', handleResize);
 
     const animate = () => {
+        // FORCE TRANSPARENT BACKGROUND FOR AR
+        if (renderer.xr.isPresenting) {
+          scene.background = null;
+        } else {
+          scene.background = new THREE.Color(0x0a0a0f);
+        }
+
         controls.update();
 
         // --- IMAGE TRACKING ALIGNMENT ---
