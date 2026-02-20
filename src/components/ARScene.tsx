@@ -61,8 +61,8 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   const lastVibrationTimeRef = useRef<number>(0);
 
   // Position of our physical marker in the virtual world (HOD Door center)
-  // X=2.0, Z=4.4 matches the new CAD-based floor3Data measurements
-  const calibrationPoint = { x: 2.0, z: 4.4 }; 
+  // X=2.0, Z=1.6 matches the new CAD-based floor3Data measurements
+  const calibrationPoint = { x: 2.0, z: 1.6 }; 
 
   const tryCalibrate = () => {
     if (floorPlanGroupRef.current && cameraRef.current) {

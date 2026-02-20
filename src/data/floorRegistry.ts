@@ -46,7 +46,7 @@ export const verticalConnectors: {
     floorWaypoints: {
       f1: 'f1_wp_hall_lift',
       f2: 'f2_wp_hall_lift',
-      f3: 'f3_wp_hall_lift',
+      f3: 'f3_wp_lift',
       f4: 'f4_wp_hall_lift',
       f5: 'f5_wp_hall_lift',
       f6: 'f6_wp_hall_lift',
@@ -59,7 +59,7 @@ export const verticalConnectors: {
     floorWaypoints: {
       f1: 'f1_wp_hall_stairs_bot',
       f2: 'f2_wp_hall_stairs_bot',
-      f3: 'f3_wp_hall_stairs_bot',
+      f3: 'f3_wp_stairs_bot',
       f4: 'f4_wp_hall_stairs_bot',
       f5: 'f5_wp_hall_stairs_bot',
       f6: 'f6_wp_hall_stairs_bot',
@@ -72,7 +72,7 @@ export const verticalConnectors: {
     floorWaypoints: {
       f1: 'f1_wp_hall_gents',
       f2: 'f2_wp_hall_women',
-      f3: 'f3_wp_hall_gents',
+      f3: 'f3_wp_stairs_top',
       f4: 'f4_wp_hall_gents',
       f5: 'f5_wp_hall_lab14',
       f6: 'f6_wp_hall_505',
