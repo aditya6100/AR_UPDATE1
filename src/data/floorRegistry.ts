@@ -71,7 +71,7 @@ export const verticalConnectors: {
     costPerFloor: 10,
     floorWaypoints: {
       f1: 'f1_wp_hall_gents',
-      f2: 'f2_wp_hall_women',
+      f2: 'f2_wp_hall_stairs_top',
       f3: 'f3_wp_stairs_top',
       f4: 'f4_wp_hall_gents',
       f5: 'f5_wp_hall_lab14',
