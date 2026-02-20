@@ -23,6 +23,22 @@ export interface FloorMessage {
   type: 'welcome' | 'quote' | 'utility';
 }
 
+export interface Door {
+  room: string;
+  wallSide: 'top' | 'bottom' | 'left' | 'right';
+  posX: number;
+  posZ?: number;
+  width: number;
+}
+
+export interface Feature {
+  id: string;
+  name: string;
+  type: string;
+  center: [number, number];
+  size: { width: number; depth: number };
+}
+
 export interface FloorData {
   floorId: string;
   floorNumber: number;
@@ -30,7 +46,11 @@ export interface FloorData {
   rooms: Room[];
   waypoints: Waypoint[];
   walls: Wall[];
-  floorMessages?: FloorMessage[]; // 👈 New field
+  corridorPolygon?: [number, number][]; // 👈 Added
+  corridorColor?: string;               // 👈 Added
+  doors?: Door[];                       // 👈 Added
+  features?: Feature[];                 // 👈 Added
+  floorMessages?: FloorMessage[];
   wallHeight: number;
   wallThickness: number;
   planSize?: { width: number; height: number };

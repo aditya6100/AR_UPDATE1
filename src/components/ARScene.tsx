@@ -582,6 +582,34 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     floorMaterialRef.current = floorMat;
     floorRef.current = floor;
     floorPlanGroup.add(floor);
+
+    // ── RENDER CORRIDOR POLYGON (Green Floor) ─────────────────────────────
+    if (floorData.corridorPolygon && floorData.corridorPolygon.length > 0) {
+      const shape = new THREE.Shape();
+      const [startPolyX, startPolyZ] = floorData.corridorPolygon[0];
+      shape.moveTo(startPolyX, startPolyZ);
+      floorData.corridorPolygon.slice(1).forEach(([px, pz]) => {
+        shape.lineTo(px, pz);
+      });
+      shape.closePath();
+
+      // Extrude slightly to be just above the dark floor plane
+      const extrudeSettings = { depth: 0.02, bevelEnabled: false };
+      const corridorGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      const corridorMat = new THREE.MeshStandardMaterial({ 
+        color: floorData.corridorColor || 0x2ecc40,
+        roughness: 0.6,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.8
+      });
+      const corridorMesh = new THREE.Mesh(corridorGeo, corridorMat);
+      corridorMesh.rotation.x = -Math.PI / 2;
+      // Position it slightly above Y=0 to prevent Z-fighting
+      corridorMesh.position.y = 0.01; 
+      floorPlanGroup.add(corridorMesh);
+    }
+
     if (cameraRef.current && controlsRef.current) {
         cameraRef.current.position.set(center.x, 38, center.z + 0.001);
         controlsRef.current.target.copy(center);
