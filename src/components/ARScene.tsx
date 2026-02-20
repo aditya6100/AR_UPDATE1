@@ -219,25 +219,19 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         const p1 = activeSegment.positions[0];
         const p2 = activeSegment.positions[1];
 
-        // 1. Reset rotation
-        group.rotation.set(0, 0, 0);
-
-        // 2. Calculate the angle of the first path segment in floor coordinates
-        // Math.atan2(dx, dz) gives the angle relative to the floor's Z-axis
+        // 1. Calculate the angle of the first path segment
         const dx = p2[0] - p1[0];
         const dz = p2[1] - p1[1];
         const pathAngle = Math.atan2(dx, dz);
 
-        // 3. Rotate group so this segment aligns with AR's negative Z-axis (forward)
-        // AR Forward is (0, 0, -1), which is angle Math.PI
-        // Rotation = TargetAngle - CurrentPathAngle
-        group.rotation.y = Math.PI - pathAngle;
+        // 2. Adjust rotation: user reported arrows on the right with PI - pathAngle.
+        // We rotate by PI/2 - pathAngle to shift the orientation 90 degrees clockwise.
+        group.rotation.set(0, (Math.PI / 2) - pathAngle, 0);
 
-        // 4. Position: place p1 at origin (user's feet)
-        // We must apply the rotation to the offset vector
-        const offset = new THREE.Vector3(-p1[0] * AR_SCALE, 0, -p1[1] * AR_SCALE);
-        offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), group.rotation.y);
-        group.position.copy(offset);
+        // 3. Position: place first waypoint (p1) at user's feet (origin)
+        const p1Vec = new THREE.Vector3(p1[0], 0, p1[1]).multiplyScalar(AR_SCALE);
+        p1Vec.applyAxisAngle(new THREE.Vector3(0, 1, 0), group.rotation.y);
+        group.position.set(-p1Vec.x, 0, -p1Vec.z);
       } else {
         // Fallback if no path: place start room at origin
         const startRoomObj = floorData.rooms.find(r => r.id === startRoomRef.current);
