@@ -53,6 +53,9 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
   const startRoomRef  = useRef(startRoomId);
   const endRoomIdRef  = useRef(endRoomId);
   
+  const lastDrawTimeRef = useRef<number>(0);
+  const isDrawingPathRef = useRef<boolean>(false);
+
   const [isFarView, setIsFarView] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isCalibrated, setIsCalibrated] = useState(false);
@@ -846,6 +849,13 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
   };
 
   const drawPath = (segment: PathSegment, floorPlanGroup: THREE.Group) => {
+    // ── THROTTLE: Prevent crashes from rapid updates ────────────────────────
+    const now = performance.now();
+    if (now - lastDrawTimeRef.current < 500) return; // limit to 2 per second
+    if (isDrawingPathRef.current) return;
+    isDrawingPathRef.current = true;
+    lastDrawTimeRef.current = now;
+
     // ── Clear old arrows, beacon and start pulse ──────────────────────────────
     spheresRef.current.forEach(entry => {
       floorPlanGroup.remove(entry.cone, entry.shaft, entry.ring);
@@ -883,14 +893,20 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       lineRef.current = null;
     }
 
-    if (!segment || segment.positions.length < 2) return;
+    if (!segment || segment.positions.length < 2) {
+      isDrawingPathRef.current = false;
+      return;
+    }
 
     const pathPoints = segment.positions.map(pos => {
       // Y=0.12 — sits just above floor surface, visible in both 3D and AR
       return new THREE.Vector3(pos[0], 0.12, pos[1]);
     });
 
-    if (pathPoints.length < 2) return;
+    if (pathPoints.length < 2) {
+      isDrawingPathRef.current = false;
+      return;
+    }
 
     // ── Build start pulse ring ──────────────────────────────────────────────
     const startRingGeo = new THREE.TorusGeometry(0.8, 0.05, 12, 32);
@@ -952,7 +968,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     pathCurveRef.current = curve;
 
     // More curve points = smoother arrow placement
-    const TOTAL_PTS = 300;
+    const TOTAL_PTS = 200; // Reduced from 300
     const curvePoints = curve.getPoints(TOTAL_PTS);
     curvePointsGlobalRef.current = curvePoints;
 
@@ -965,7 +981,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     lineRef.current = line;
 
     // ── Place arrows immediately (all at once) ──────────────────────────────
-    const ARROW_SPACING = 4;
+    const ARROW_SPACING = 8; // Back to 8 for performance
     const isAR = rendererRef.current?.xr.isPresenting ?? false;
 
     // In AR we want real-world scale arrows (~20cm tall)
@@ -1031,6 +1047,8 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       floorPlanGroup.add(cone, shaft, ring);
       spheresRef.current.push({ cone, shaft, ring, coneGeo, coneMat, shaftGeo, shaftMat, ringGeo, ringMat });
     }
+    
+    isDrawingPathRef.current = false;
   };
 
   return (
