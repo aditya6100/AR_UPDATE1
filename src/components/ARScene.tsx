@@ -284,6 +284,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
 
     renderer.xr.addEventListener('sessionstart', () => {
       if (onSessionStateChange) onSessionStateChange(true);
+      if (sceneRef.current) sceneRef.current.background = null; // 👈 ESSENTIAL: Make background transparent for camera
       setIsScanning(true);
       setIsCalibrated(false);
 
@@ -350,7 +351,8 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
 
     renderer.xr.addEventListener('sessionend', () => {
       if (onSessionStateChange) onSessionStateChange(false);
-
+      if (sceneRef.current) sceneRef.current.background = new THREE.Color(0x0a0a0f); // 👈 Restore background
+      
       const group = floorPlanGroupRef.current;
       if (!group) return;
 
@@ -1040,7 +1042,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       <div ref={containerRef} className="fixed inset-0 z-0" />
       
       {isScanning && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm pointer-events-auto">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/40 pointer-events-auto">
           <div className="bg-slate-900 border border-purple-500/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-xs text-center pointer-events-auto">
             <div className="relative w-24 h-24 mb-6">
               <div className="absolute inset-0 border-4 border-purple-500 rounded-2xl animate-pulse" />
