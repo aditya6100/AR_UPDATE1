@@ -224,14 +224,16 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         const dz = p2[1] - p1[1];
         const pathAngle = Math.atan2(dx, dz);
 
-        // 2. Adjust rotation: user reported 'reverse' for PI - pathAngle.
-        // We use -pathAngle (0 baseline) to flip it 180 degrees.
-        group.rotation.set(0, -pathAngle, 0);
+        // 2. Rotation: Use PI - pathAngle as the primary baseline for 'Forward'
+        group.rotation.set(0, Math.PI - pathAngle, 0);
 
-        // 3. Position: place first waypoint (p1) at user's feet (origin)
+        // 3. Position: Place p1 slightly IN FRONT of the user (1.5m forward)
+        // so they aren't standing 'inside' the first arrow.
         const p1Vec = new THREE.Vector3(p1[0], 0, p1[1]).multiplyScalar(AR_SCALE);
         p1Vec.applyAxisAngle(new THREE.Vector3(0, 1, 0), group.rotation.y);
-        group.position.set(-p1Vec.x, 0, -p1Vec.z);
+        
+        // Offset by 1.5m on AR's negative Z axis (forward)
+        group.position.set(-p1Vec.x, 0, -p1Vec.z - 1.5);
       } else {
         // Fallback if no path: place start room at origin
         const startRoomObj = floorData.rooms.find(r => r.id === startRoomRef.current);
