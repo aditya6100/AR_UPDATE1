@@ -163,14 +163,33 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     renderer.xr.enabled = true;
     rendererRef.current = renderer;
 
-    // 'local-floor' places origin at floor level — essential for ground-level arrows
-    const arButton = ARButton.createButton(renderer, {
-      requiredFeatures: ['hit-test'],
-      optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar', 'image-tracking'],
-      domOverlay: { root: document.body },
-    });
-    arButtonRef.current = arButton;
-    containerRef.current.appendChild(arButton);
+    // --- ASYNC AR BUTTON INITIALIZATION ---
+    const setupARButton = async () => {
+      const sessionInit: any = {
+        requiredFeatures: ['hit-test'],
+        optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar', 'image-tracking'],
+        domOverlay: { root: document.body },
+      };
+
+      try {
+        const img = new Image();
+        img.src = '/AR_UPDATE1/marker.png'; // Path for GitHub Pages
+        await img.decode();
+        const bitmap = await createImageBitmap(img);
+        sessionInit.trackedImages = [{
+          image: bitmap,
+          widthInMeters: 0.2 // 20cm
+        }];
+        console.log("AR: Image tracking configured.");
+      } catch (e) {
+        console.warn("AR: Image tracking setup failed, falling back to basic AR.", e);
+      }
+
+      const arButton = ARButton.createButton(renderer, sessionInit);
+      arButtonRef.current = arButton;
+      containerRef.current?.appendChild(arButton);
+    };
+    setupARButton();
 
     // --- NEW LIGHTING SETUP ---
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
