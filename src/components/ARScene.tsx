@@ -384,8 +384,10 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     window.addEventListener('resize', handleResize);
 
     const animate = () => {
-        // FORCE TRANSPARENT BACKGROUND FOR AR
-        if (renderer.xr.isPresenting) {
+        const isPresenting = renderer.xr.isPresenting;
+        
+        // 1. CRITICAL: Guarantee camera feed is visible in AR
+        if (isPresenting) {
           scene.background = null;
         } else {
           scene.background = new THREE.Color(0x0a0a0f);
@@ -393,112 +395,86 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
 
         controls.update();
 
-        // --- IMAGE TRACKING ALIGNMENT ---
+        // 2. IMAGE TRACKING ALIGNMENT
         const session = renderer.xr.getSession();
         const frame = renderer.xr.getFrame();
         if (session && frame && isScanning && !isCalibrated && floorPlanGroupRef.current) {
           try {
-            // @ts-ignore - getImageTrackingResults is newer WebXR
+            // @ts-ignore
             const results = frame.getImageTrackingResults?.() || [];
             for (const result of results) {
               if (result.trackingState === 'tracked' || result.trackingState === 'emulated') {
-                // 1. Identify which floor marker this is
-                const markerIndex = result.index; // WebXR returns index in trackedImages array
+                const markerIndex = result.index;
                 const markerFloors = floors.filter(f => f.marker);
                 const floorFound = markerFloors[markerIndex];
 
                 if (floorFound && floorFound.marker) {
                   const referenceSpace = renderer.xr.getReferenceSpace();
-                  if (!referenceSpace) continue; // 👈 SAFETY: Don't proceed if space isn't ready
-
-                  const pose = frame.getPose(result.imageSpace, referenceSpace);
-                  if (pose) {
-                    const { position, orientation } = pose.transform;
-                    const group = floorPlanGroupRef.current;
-
-                    // 2. Snap to this specific floor's calibration point
-                    group.position.set(position.x, position.y, position.z);
-                    group.quaternion.set(orientation.x, orientation.y, orientation.z, orientation.w);
-
-                    group.translateX(-floorFound.marker.position.x);
-                    group.translateZ(-floorFound.marker.position.z);
-
-                    setActiveMarkerInfo({ label: floorFound.label, floorId: floorFound.id });
-                    setIsCalibrated(true);
-                    setIsScanning(false);
-                    if (navigator.vibrate) navigator.vibrate(200);
+                  if (referenceSpace) {
+                    const pose = frame.getPose(result.imageSpace, referenceSpace);
+                    if (pose) {
+                      const { position, orientation } = pose.transform;
+                      const group = floorPlanGroupRef.current;
+                      group.position.set(position.x, position.y, position.z);
+                      group.quaternion.set(orientation.x, orientation.y, orientation.z, orientation.w);
+                      group.translateX(-floorFound.marker.position.x);
+                      group.translateZ(-floorFound.marker.position.z);
+                      setActiveMarkerInfo({ label: floorFound.label, floorId: floorFound.id });
+                      setIsCalibrated(true);
+                      setIsScanning(false);
+                      if (navigator.vibrate) navigator.vibrate(200);
+                    }
                   }
                 }
               }
             }
-          } catch (err) {
-            console.error("AR: Image tracking error caught:", err);
-          }
+          } catch (e) { console.error(e); }
         }
 
-        // --- LIVE HUD & HAPTICS LOGIC ---
-        if (session && isCalibrated && activeSegment && activeSegment.positions.length > 0) {
+        // 3. LIVE HUD & DISTANCE
+        if (isPresenting && isCalibrated && activeSegment && activeSegment.positions.length > 0) {
           const userPos = new THREE.Vector3();
           camera.getWorldPosition(userPos);
-
-          // 1. Distance on current floor (from user to segment end)
           const lastPoint = activeSegment.positions[activeSegment.positions.length - 1];
-          const currentFloorEnd = new THREE.Vector3(lastPoint[0], 0, lastPoint[1]);
-          if (floorPlanGroupRef.current) {
-            currentFloorEnd.applyMatrix4(floorPlanGroupRef.current.matrixWorld);
-          }
-          const distCurrentFloor = userPos.distanceTo(currentFloorEnd);
+          const destPos = new THREE.Vector3(lastPoint[0], 0, lastPoint[1]);
+          if (floorPlanGroupRef.current) destPos.applyMatrix4(floorPlanGroupRef.current.matrixWorld);
+          
+          const distCurrent = userPos.distanceTo(destPos);
+          setDistanceToDest(distCurrent);
 
-          // 2. Sum up lengths of all SUBSEQUENT segments
-          let subseqDist = 0;
-          const currentSegIdx = pathSegments.findIndex(s => s.floorId === floorData.floorId);
-          if (currentSegIdx !== -1) {
-            for (let i = currentSegIdx + 1; i < pathSegments.length; i++) {
+          let subseq = 0;
+          const idx = pathSegments.findIndex(s => s.floorId === floorData.floorId);
+          if (idx !== -1) {
+            for (let i = idx + 1; i < pathSegments.length; i++) {
               const seg = pathSegments[i];
-              // Simple segment length calculation
               for (let j = 1; j < seg.positions.length; j++) {
-                const pA = seg.positions[j-1];
-                const pB = seg.positions[j];
-                subseqDist += Math.sqrt(Math.pow(pB[0]-pA[0], 2) + Math.pow(pB[1]-pA[1], 2));
+                subseq += Math.sqrt(Math.pow(seg.positions[j][0]-seg.positions[j-1][0],2) + Math.pow(seg.positions[j][1]-seg.positions[j-1][1],2));
               }
-              // Add floor jump cost (approx 5m for stairs)
-              subseqDist += 5;
+              subseq += 5;
             }
           }
+          setTotalDistanceRemaining(distCurrent + subseq);
 
-          const totalDist = distCurrentFloor + subseqDist;
-          setDistanceToDest(distCurrentFloor); // distance to end of THIS floor
-          setTotalDistanceRemaining(totalDist); // distance to final goal
-
-          // HAPTIC: Arrival (within 1.5m of final destination)
-          const isFinalFloor = currentSegIdx === pathSegments.length - 1;
-          if (isFinalFloor && totalDist < 1.5 && !hasArrived) {
+          if (idx === pathSegments.length - 1 && (distCurrent + subseq) < 1.5 && !hasArrived) {
             if (navigator.vibrate) navigator.vibrate([500, 100, 500]);
             setHasArrived(true);
             setNextInstruction("You have arrived!");
-          } else if (totalDist >= 1.5) {
+          } else if ((distCurrent + subseq) >= 1.5) {
             setHasArrived(false);
-            setNextInstruction(activeSegment.transition 
-              ? `Take ${activeSegment.transition.name} to ${activeSegment.transition.toFloor.replace('f','Floor ')}` 
-              : `Follow arrows to Destination`);
+            setNextInstruction(activeSegment.transition ? `Take ${activeSegment.transition.name}` : `Follow arrows`);
           }
         }
 
-        // --- NEARBY LABELS LOGIC ---
-        if (labelsGroupRef.current && session && isCalibrated) {
+        // 4. NEARBY LABELS
+        if (labelsGroupRef.current && isPresenting && isCalibrated) {
           const userPos = new THREE.Vector3();
           camera.getWorldPosition(userPos);
-
-          labelsGroupRef.current.children.forEach((label) => {
+          labelsGroupRef.current.children.forEach(label => {
             const labelPos = new THREE.Vector3();
             label.getWorldPosition(labelPos);
             const dist = userPos.distanceTo(labelPos);
-            
-            // Only show labels within 5 meters
             label.visible = dist < 5;
-            
             if (label.visible) {
-              // Fade in/out based on distance
               const mat = (label as THREE.Mesh).material as THREE.MeshBasicMaterial;
               mat.opacity = THREE.MathUtils.lerp(1, 0, (dist - 2) / 3);
               label.scale.setScalar(THREE.MathUtils.lerp(1, 0.5, (dist - 2) / 3));
@@ -506,80 +482,61 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
           });
         }
 
-        // --- NEARBY FLOOR MESSAGES LOGIC ---
+        // 5. NEARBY FLOOR MESSAGES
         if (floorMessagesGroupRef.current) {
           const userPos = new THREE.Vector3();
           camera.getWorldPosition(userPos);
-
-          floorMessagesGroupRef.current.children.forEach((msg) => {
+          const timeMsg = performance.now() * 0.001;
+          floorMessagesGroupRef.current.children.forEach(msg => {
             const msgPos = new THREE.Vector3();
             msg.getWorldPosition(msgPos);
             const dist = userPos.distanceTo(msgPos);
-            
-            const isAR = session && isCalibrated;
-            
-            // In AR, only show messages within 4 meters
-            // In 3D view, show them all
-            msg.visible = isAR ? (dist < 4) : true;
-            
+            const isARMode = isPresenting && isCalibrated;
+            msg.visible = isARMode ? (dist < 4) : true;
             if (msg.visible) {
               const mat = (msg as THREE.Mesh).material as THREE.MeshStandardMaterial;
-              const opacity = isAR ? THREE.MathUtils.clamp(1 - (dist / 4), 0, 1) : 0.9;
-              mat.opacity = opacity;
+              mat.opacity = isARMode ? THREE.MathUtils.clamp(1 - (dist / 4), 0, 1) : 0.9;
               mat.transparent = true;
-              
-              // Pulse effect
-              const pulse = 1 + Math.sin(time * 3) * 0.05;
-              msg.scale.setScalar(pulse);
+              msg.scale.setScalar(1 + Math.sin(timeMsg * 3) * 0.05);
             }
           });
         }
 
-        // Animate existing arrows — float + pulse glow
-        const time = performance.now() * 0.001;
+        // 6. ANIMATE ARROWS
+        const timeArrows = performance.now() * 0.001;
         spheresRef.current.forEach((entry, i) => {
-            const { cone, shaft, ring } = entry;
-            const floatOffset = Math.sin(time * 2 + i * 0.4) * 0.04;
-            if (cone.userData.baseY  !== undefined) cone.position.y  = cone.userData.baseY  + floatOffset;
-            if (shaft.userData.baseY !== undefined) shaft.position.y = shaft.userData.baseY + floatOffset;
-            if (ring.userData.baseY  !== undefined) ring.position.y  = ring.userData.baseY;
-
-            const pulse = 1.8 + Math.sin(time * 3 + i) * 0.7;
-            [cone, shaft].forEach(mesh => {
-                const mat = mesh.material as THREE.MeshStandardMaterial;
-                if (mat.emissive !== undefined) mat.emissiveIntensity = pulse;
-            });
-
-            const scale = 1 + Math.sin(time * 2 + i) * 0.04;
-            cone.scale.set(scale, scale, scale);
-            shaft.scale.set(scale, scale, scale);
+          const { cone, shaft, ring } = entry;
+          const floatOffset = Math.sin(timeArrows * 2 + i * 0.4) * 0.04;
+          if (cone.userData.baseY !== undefined) cone.position.y = cone.userData.baseY + floatOffset;
+          if (shaft.userData.baseY !== undefined) shaft.position.y = shaft.userData.baseY + floatOffset;
+          const pulse = 1.8 + Math.sin(timeArrows * 3 + i) * 0.7;
+          [cone, shaft].forEach(m => (m.material as THREE.MeshStandardMaterial).emissiveIntensity = pulse);
+          const scale = 1 + Math.sin(timeArrows * 2 + i) * 0.04;
+          cone.scale.set(scale, scale, scale);
+          shaft.scale.set(scale, scale, scale);
         });
 
-        // Animate start pulse
+        // 7. ANIMATE START/DEST
         if (startPulseRef.current) {
-          const s = 1 + Math.sin(time * 4) * 0.2;
+          const s = 1 + Math.sin(timeArrows * 4) * 0.2;
           startPulseRef.current.scale.set(s, s, s);
-          (startPulseRef.current.material as THREE.MeshStandardMaterial).opacity = 0.5 + Math.sin(time * 4) * 0.5;
+          (startPulseRef.current.material as THREE.MeshStandardMaterial).opacity = 0.5 + Math.sin(timeArrows * 4) * 0.5;
         }
-
-        // Animate destination beacon
         if (destinationBeaconRef.current) {
-          const gem = destinationBeaconRef.current.children[3]; // Octahedron
+          const gem = destinationBeaconRef.current.children[3];
           if (gem) {
             gem.rotation.y += 0.03;
-            gem.rotation.x += 0.01;
-            gem.position.y = 7.0 + Math.sin(time * 2.5) * 0.5;
+            gem.position.y = 7.0 + Math.sin(timeArrows * 2.5) * 0.5;
           }
-          const ring2 = destinationBeaconRef.current.children[1]; // Inner rotating ring
+          const ring2 = destinationBeaconRef.current.children[1];
           if (ring2) {
             ring2.rotation.z += 0.02;
-            ring2.scale.setScalar(1.2 + Math.sin(time * 2) * 0.1);
+            ring2.scale.setScalar(1.2 + Math.sin(timeArrows * 2) * 0.1);
           }
         }
 
-        if (scene && camera) {
-          renderer.render(scene, camera);
-        }
+        // 8. FINAL RENDER
+        renderer.render(scene, camera);
     };
 
     renderer.setAnimationLoop(animate);
