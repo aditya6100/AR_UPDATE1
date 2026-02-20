@@ -397,36 +397,42 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
         const session = renderer.xr.getSession();
         const frame = renderer.xr.getFrame();
         if (session && frame && isScanning && !isCalibrated && floorPlanGroupRef.current) {
-          // @ts-ignore - getImageTrackingResults is newer WebXR
-          const results = frame.getImageTrackingResults?.() || [];
-          for (const result of results) {
-            if (result.trackingState === 'tracked' || result.trackingState === 'emulated') {
-              // 1. Identify which floor marker this is
-              const markerIndex = result.index; // WebXR returns index in trackedImages array
-              const markerFloors = floors.filter(f => f.marker);
-              const floorFound = markerFloors[markerIndex];
+          try {
+            // @ts-ignore - getImageTrackingResults is newer WebXR
+            const results = frame.getImageTrackingResults?.() || [];
+            for (const result of results) {
+              if (result.trackingState === 'tracked' || result.trackingState === 'emulated') {
+                // 1. Identify which floor marker this is
+                const markerIndex = result.index; // WebXR returns index in trackedImages array
+                const markerFloors = floors.filter(f => f.marker);
+                const floorFound = markerFloors[markerIndex];
 
-              if (floorFound && floorFound.marker) {
-                const referenceSpace = renderer.xr.getReferenceSpace();
-                const pose = frame.getPose(result.imageSpace, referenceSpace!);
-                if (pose) {
-                  const { position, orientation } = pose.transform;
-                  const group = floorPlanGroupRef.current;
+                if (floorFound && floorFound.marker) {
+                  const referenceSpace = renderer.xr.getReferenceSpace();
+                  if (!referenceSpace) continue; // 👈 SAFETY: Don't proceed if space isn't ready
 
-                  // 2. Snap to this specific floor's calibration point
-                  group.position.set(position.x, position.y, position.z);
-                  group.quaternion.set(orientation.x, orientation.y, orientation.z, orientation.w);
+                  const pose = frame.getPose(result.imageSpace, referenceSpace);
+                  if (pose) {
+                    const { position, orientation } = pose.transform;
+                    const group = floorPlanGroupRef.current;
 
-                  group.translateX(-floorFound.marker.position.x);
-                  group.translateZ(-floorFound.marker.position.z);
+                    // 2. Snap to this specific floor's calibration point
+                    group.position.set(position.x, position.y, position.z);
+                    group.quaternion.set(orientation.x, orientation.y, orientation.z, orientation.w);
 
-                  setActiveMarkerInfo({ label: floorFound.label, floorId: floorFound.id });
-                  setIsCalibrated(true);
-                  setIsScanning(false);
-                  if (navigator.vibrate) navigator.vibrate(200);
+                    group.translateX(-floorFound.marker.position.x);
+                    group.translateZ(-floorFound.marker.position.z);
+
+                    setActiveMarkerInfo({ label: floorFound.label, floorId: floorFound.id });
+                    setIsCalibrated(true);
+                    setIsScanning(false);
+                    if (navigator.vibrate) navigator.vibrate(200);
+                  }
                 }
               }
             }
+          } catch (err) {
+            console.error("AR: Image tracking error caught:", err);
           }
         }
 
@@ -571,7 +577,9 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
           }
         }
 
-        renderer.render(scene, camera);
+        if (scene && camera) {
+          renderer.render(scene, camera);
+        }
     };
 
     renderer.setAnimationLoop(animate);
