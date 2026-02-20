@@ -185,24 +185,26 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     // --- ASYNC AR BUTTON INITIALIZATION ---
     const setupARButton = async () => {
       const sessionInit: any = {
-        requiredFeatures: ['hit-test'], // Only hit-test is mandatory
+        requiredFeatures: ['hit-test'], 
         optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar', 'image-tracking'],
         domOverlay: { root: document.body },
       };
 
       try {
         const img = new Image();
-        // Use relative path for better compatibility
-        img.src = './marker.png'; 
+        // Use absolute URL to marker.png for GitHub Pages reliability
+        const baseUrl = window.location.href.split('?')[0].split('#')[0];
+        img.src = baseUrl.endsWith('/') ? baseUrl + 'marker.png' : baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1) + 'marker.png';
+        
         await img.decode();
         const bitmap = await createImageBitmap(img);
         sessionInit.trackedImages = [{
           image: bitmap,
-          widthInMeters: 0.2
+          widthInMeters: 0.2 // Exact width of your printed marker
         }];
-        console.log("AR: Image tracking configured.");
+        console.log("AR: Image tracking configured with absolute path:", img.src);
       } catch (e) {
-        console.warn("AR: Image tracking setup failed or not supported, continuing without it.", e);
+        console.warn("AR: Image tracking setup failed, continuing without it.", e);
       }
 
       const arButton = ARButton.createButton(renderer, sessionInit);
@@ -355,7 +357,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
           // @ts-ignore - getImageTrackingResults is newer WebXR
           const results = frame.getImageTrackingResults?.() || [];
           for (const result of results) {
-            if (result.trackingState === 'tracked') {
+            if (result.trackingState === 'tracked' || result.trackingState === 'emulated') {
               const referenceSpace = renderer.xr.getReferenceSpace();
               const pose = frame.getPose(result.imageSpace, referenceSpace!);
               if (pose) {
