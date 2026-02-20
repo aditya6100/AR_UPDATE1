@@ -210,8 +210,8 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
       if (!group) return;
 
       // ── Scale the floor plan group to real-world metres ────────────────
-      // Set to 1.5 for adjusted scale (arrows were ending too early).
-      const AR_SCALE = 1.5;
+      // Set to 1.3 for adjusted scale (balancing previous 1.0 and 1.5).
+      const AR_SCALE = 1.3;
       group.scale.set(AR_SCALE, AR_SCALE, AR_SCALE);
 
       // ── Position & Rotation: Align path to start in front of user ──────
@@ -614,13 +614,13 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     // In 3D view we want proportional arrows relative to the floor plan
     // The floor plan group in AR is positioned at real scale so 1 unit = 1 metre
     // We detect AR and use 0.2 (20cm) vs 0.4 (proportional to 52-unit plan)
-    const coneH  = isAR ? 0.20 : 0.40;
-    const coneR  = isAR ? 0.07 : 0.12;
-    const shaftL = isAR ? 0.15 : 0.28;
-    const shaftR = isAR ? 0.025: 0.04;
-    const ringO  = isAR ? 0.08 : 0.14;
-    const ringI  = isAR ? 0.05 : 0.09;
-    const arrowY = isAR ? 0.01 : 0.12;  // Y height above floor
+    const coneH  = isAR ? 0.15 : 0.40;
+    const coneR  = isAR ? 0.06 : 0.12;
+    const shaftL = isAR ? 0.10 : 0.28;
+    const shaftR = isAR ? 0.02 : 0.04;
+    const ringO  = isAR ? 0.06 : 0.14;
+    const ringI  = isAR ? 0.03 : 0.09;
+    const arrowY = isAR ? 0.005 : 0.12;  // Lowered for AR (was 0.01)
 
     for (let idx = 0; idx < curvePoints.length; idx += ARROW_SPACING) {
       const pt      = curvePoints[idx].clone();
