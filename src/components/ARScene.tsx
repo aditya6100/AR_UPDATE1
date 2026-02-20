@@ -997,7 +997,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     const shaftR = isAR ? 0.015 : 0.04;
     const ringO  = isAR ? 0.05 : 0.14;
     const ringI  = isAR ? 0.02 : 0.09;
-    const arrowY = isAR ? 0.001 : 0.12;  // Touching the ground for AR
+    const arrowY = isAR ? 0.05 : 0.12;  // Raised to 0.05 to be above the green floor (0.01)
 
     for (let idx = 0; idx < curvePoints.length; idx += ARROW_SPACING) {
       const pt      = curvePoints[idx].clone();

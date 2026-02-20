@@ -10,7 +10,7 @@ export const floor5Data = {
 
   // ── GREEN CORRIDOR / MIDDLE PORTION POLYGON ───────────────────────────
   corridorPolygon: [
-    [ 0.00,  3.20],  // top-left
+    [ 0.00,  3.20],  
     [24.54,  3.20],  
     [24.54,  2.35],  
     [27.54,  2.35],  
@@ -33,7 +33,7 @@ export const floor5Data = {
     { id: "f5_tutorial",   name: "Tutorial Room",  center: [17.54, 1.60], connectedTo: ["f5_wp_hall_lab11"] },
     { id: "f5_lab11",      name: "Lab 11",         center: [26.04, 1.10], connectedTo: ["f5_wp_hall_lab11"] },
     { id: "f5_lab12",      name: "Lab 12",         center: [33.15, 3.65], connectedTo: ["f5_wp_hall_lab12"] },
-    { id: "f5_lift",       name: "Lift",           center: [0.89,  5.70], connectedTo: [] }, // NO CONNECTION
+    { id: "f5_lift",       name: "Lift",           center: [0.89,  5.70], connectedTo: [] }, 
     { id: "f5_stairs_bot", name: "Stairs (Bot)",   center: [3.57,  5.70], connectedTo: ["f5_wp_hall_stairs_bot"] },
     { id: "f5_lab13",      name: "Lab 13",         center: [10.95, 5.70], connectedTo: ["f5_wp_hall_lab14"] },
     { id: "f5_lab14",      name: "Lab 14",         center: [20.54, 5.70], connectedTo: ["f5_wp_hall_lab14"] },

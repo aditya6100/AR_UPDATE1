@@ -199,25 +199,27 @@ export function findMultiFloorPath(
     const wpId = pathIds[i];
     const node = graph.find(n => n.id === wpId)!;
 
-    if (!currentSegment || currentSegment.floorId !== node.floorId) {
-      let transition: PathSegment['transition'] | undefined;
+    const isNewFloor = !currentSegment || currentSegment.floorId !== node.floorId;
+
+    if (isNewFloor) {
+      // 1. If we are changing floors, check if there was a transition from the PREVIOUS node
       if (currentSegment && i > 0) {
         const prevId = pathIds[i - 1];
-        const connector = verticalConnectors.find(c =>
-          Object.values(c.floorWaypoints).includes(prevId) &&
+        const connector = verticalConnectors.find(c => 
+          Object.values(c.floorWaypoints).includes(prevId) && 
           Object.values(c.floorWaypoints).includes(wpId)
         );
         if (connector) {
-          transition = {
+          currentSegment.transition = {
             type: connector.type,
             name: connector.name,
             fromFloor: currentSegment.floorId,
-            toFloor: node.floorId,
+            toFloor: node.floorId
           };
         }
-        if (currentSegment) currentSegment.transition = transition;
       }
 
+      // 2. Start new segment
       currentSegment = {
         floorId: node.floorId,
         waypointIds: [wpId],
@@ -225,8 +227,9 @@ export function findMultiFloorPath(
       };
       segments.push(currentSegment);
     } else {
-      currentSegment.waypointIds.push(wpId);
-      currentSegment.positions.push([node.position[0], node.position[1]]);
+      // Continue same floor segment
+      currentSegment!.waypointIds.push(wpId);
+      currentSegment!.positions.push([node.position[0], node.position[1]]);
     }
   }
 

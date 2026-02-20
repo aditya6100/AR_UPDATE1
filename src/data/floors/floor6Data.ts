@@ -10,7 +10,7 @@ export const floor6Data = {
 
   // ── GREEN CORRIDOR / MIDDLE PORTION POLYGON ───────────────────────────
   corridorPolygon: [
-    [ 0.00,  3.20],  // top-left
+    [ 0.00,  3.20],  
     [24.54,  3.20],  
     [24.54,  2.35],  
     [27.54,  2.35],  
@@ -33,7 +33,7 @@ export const floor6Data = {
     { id: "f6_503",        name: "Classroom 503",  center: [17.54, 1.60], connectedTo: ["f6_wp_hall_503"] },
     { id: "f6_504",        name: "Classroom 504",  center: [26.04, 1.10], connectedTo: ["f6_wp_hall_503"] },
     { id: "f6_505",        name: "Classroom 505",  center: [33.15, 3.65], connectedTo: ["f6_wp_hall_505"] },
-    { id: "f6_lift",       name: "Lift",           center: [0.89,  5.70], connectedTo: [] }, // NO CONNECTION
+    { id: "f6_lift",       name: "Lift",           center: [0.89,  5.70], connectedTo: [] }, 
     { id: "f6_stairs_bot", name: "Stairs (Bot)",   center: [3.57,  5.70], connectedTo: ["f6_wp_hall_stairs_bot"] },
   ],
 
