@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createWalls } from './Walls';
+import { floors, ALL_FLOORS } from '../data/floorRegistry';
 import type { FloorData } from '../data/floorTypes';
 import type { PathSegment } from '../utils/multiFloorPathfinding';
 
@@ -54,24 +55,27 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   const [isFarView, setIsFarView] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isCalibrated, setIsCalibrated] = useState(false);
+  const [activeMarkerInfo, setActiveMarkerInfo] = useState<{ label: string; floorId: string } | null>(null);
   const [distanceToDest, setDistanceToDest] = useState<number | null>(null);
   const [nextInstruction, setNextInstruction] = useState<string>('');
   const [hasArrived, setHasArrived] = useState(false);
 
   const lastVibrationTimeRef = useRef<number>(0);
 
-  // Position of our physical marker in the virtual world (HOD Door center)
-  // X=2.0, Z=1.6 matches the new CAD-based floor3Data measurements
-  const calibrationPoint = { x: 2.0, z: 1.6 }; 
-
   const tryCalibrate = () => {
     if (floorPlanGroupRef.current && cameraRef.current) {
       const group = floorPlanGroupRef.current;
       const cam = cameraRef.current;
+      
+      const currentFloorMarker = floors.find(f => f.id === floorData.floorId)?.marker;
+      if (!currentFloorMarker) return;
+
       group.position.set(cam.position.x, 0, cam.position.z);
       group.rotation.set(0, cam.rotation.y, 0);
-      group.translateX(-calibrationPoint.x);
-      group.translateZ(-calibrationPoint.z);
+      group.translateX(-currentFloorMarker.position.x);
+      group.translateZ(-currentFloorMarker.position.z);
+      
+      setActiveMarkerInfo({ label: floorData.floorName, floorId: floorData.floorId });
       setIsCalibrated(true);
       setIsScanning(false);
       if (navigator.vibrate) navigator.vibrate(200);
@@ -207,21 +211,31 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         domOverlay: { root: document.body },
       };
 
-      try {
-        const img = new Image();
-        // Use absolute URL to marker.png for GitHub Pages reliability
-        const baseUrl = window.location.href.split('?')[0].split('#')[0];
-        img.src = baseUrl.endsWith('/') ? baseUrl + 'marker.png' : baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1) + 'marker.png';
-        
-        await img.decode();
-        const bitmap = await createImageBitmap(img);
-        sessionInit.trackedImages = [{
-          image: bitmap,
-          widthInMeters: 0.2 // Exact width of your printed marker
-        }];
-        console.log("AR: Image tracking configured with absolute path:", img.src);
-      } catch (e) {
-        console.warn("AR: Image tracking setup failed, continuing without it.", e);
+      const trackedImages: any[] = [];
+      const baseUrl = window.location.href.split('?')[0].split('#')[0];
+      const getAbsUrl = (path: string) => baseUrl.endsWith('/') ? baseUrl + path : baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1) + path;
+
+      // Load markers for all floors
+      for (const floor of floors) {
+        if (floor.marker) {
+          try {
+            const img = new Image();
+            img.src = getAbsUrl(floor.marker.image);
+            await img.decode();
+            const bitmap = await createImageBitmap(img);
+            trackedImages.push({
+              image: bitmap,
+              widthInMeters: 0.2
+            });
+            console.log(`AR: Loaded marker for ${floor.label}`);
+          } catch (e) {
+            console.warn(`AR: Failed to load marker for ${floor.label}`, e);
+          }
+        }
+      }
+
+      if (trackedImages.length > 0) {
+        sessionInit.trackedImages = trackedImages;
       }
 
       const arButton = ARButton.createButton(renderer, sessionInit);
@@ -376,27 +390,30 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
           const results = frame.getImageTrackingResults?.() || [];
           for (const result of results) {
             if (result.trackingState === 'tracked' || result.trackingState === 'emulated') {
-              const referenceSpace = renderer.xr.getReferenceSpace();
-              const pose = frame.getPose(result.imageSpace, referenceSpace!);
-              if (pose) {
-                const { position, orientation } = pose.transform;
-                const group = floorPlanGroupRef.current;
+              // 1. Identify which floor marker this is
+              const markerIndex = result.index; // WebXR returns index in trackedImages array
+              const markerFloors = floors.filter(f => f.marker);
+              const floorFound = markerFloors[markerIndex];
 
-                // 1. Position the group at the marker's real location
-                group.position.set(position.x, position.y, position.z);
-                group.quaternion.set(orientation.x, orientation.y, orientation.z, orientation.w);
+              if (floorFound && floorFound.marker) {
+                const referenceSpace = renderer.xr.getReferenceSpace();
+                const pose = frame.getPose(result.imageSpace, referenceSpace!);
+                if (pose) {
+                  const { position, orientation } = pose.transform;
+                  const group = floorPlanGroupRef.current;
 
-                // 2. Offset the group so the virtual coordinate (calibrationPoint) 
-                // matches the marker's physical center.
-                // We use -x and -z because we are shifting the WORLD relative to the marker.
-                group.translateX(-calibrationPoint.x);
-                group.translateZ(-calibrationPoint.z);
+                  // 2. Snap to this specific floor's calibration point
+                  group.position.set(position.x, position.y, position.z);
+                  group.quaternion.set(orientation.x, orientation.y, orientation.z, orientation.w);
 
-                // 3. Mark as calibrated and stop scanning
-                setIsCalibrated(true);
-                setIsScanning(false);
-                // Vibrate if supported
-                if (navigator.vibrate) navigator.vibrate(200);
+                  group.translateX(-floorFound.marker.position.x);
+                  group.translateZ(-floorFound.marker.position.z);
+
+                  setActiveMarkerInfo({ label: floorFound.label, floorId: floorFound.id });
+                  setIsCalibrated(true);
+                  setIsScanning(false);
+                  if (navigator.vibrate) navigator.vibrate(200);
+                }
               }
             }
           }
@@ -1015,7 +1032,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Aligning World</h2>
             <p className="text-sm text-purple-200 mb-6 leading-relaxed">
-              Point your camera at the <span className="font-bold text-white underline">HOD Door Marker</span> to calibrate your position.
+              Point your camera at the <span className="font-bold text-white underline">{floors.find(f => f.id === floorData.floorId)?.label || 'Floor'} Marker</span> to calibrate.
             </p>
             <div className="flex flex-col gap-2 w-full">
               <button 
@@ -1054,6 +1071,11 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
               <p className="text-sm font-medium text-purple-300">
                 {nextInstruction} • {Math.ceil(distanceToDest / 1.2 / 60)} min walk
               </p>
+              {activeMarkerInfo && (
+                <p className="text-[10px] text-green-400 font-bold uppercase mt-1">
+                  ✓ Synced to {activeMarkerInfo.label}
+                </p>
+              )}
             </div>
           </div>
         </div>

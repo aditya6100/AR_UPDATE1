@@ -12,13 +12,31 @@ import { floor6Data } from './floors/floor6Data';
 import type { FloorData } from './floorTypes';
 
 // ── Floor label registry (used in NavigationUI dropdowns & route summary) ──
-export const floors: { id: string; number: number; label: string }[] = [
-  { id: 'f1', number: 1, label: 'Ground Floor'       },
-  { id: 'f2', number: 2, label: '1st Floor'           },
-  { id: 'f3', number: 3, label: '2nd Floor (CSE)'     },
-  { id: 'f4', number: 4, label: '3rd Floor'           },
-  { id: 'f5', number: 5, label: '4th Floor (ENTC)'    },
-  { id: 'f6', number: 6, label: '5th Floor'           },
+export const floors: { id: string; number: number; label: string; marker?: { image: string; position: { x: number; z: number } } }[] = [
+  { 
+    id: 'f1', number: 1, label: 'Ground Floor',
+    marker: { image: 'marker_f1.png', position: { x: 0.89, z: 3.65 } } // Near Lift
+  },
+  { 
+    id: 'f2', number: 2, label: '1st Floor',
+    marker: { image: 'marker_f2.png', position: { x: 0.89, z: 3.65 } } // Near Lift
+  },
+  { 
+    id: 'f3', number: 3, label: '2nd Floor (CSE)',
+    marker: { image: 'marker.png', position: { x: 2.0, z: 1.6 } }    // HOD Door
+  },
+  { 
+    id: 'f4', number: 4, label: '3rd Floor',
+    marker: { image: 'marker_f4.png', position: { x: 0.89, z: 3.65 } } // Near Lift
+  },
+  { 
+    id: 'f5', number: 5, label: '4th Floor (ENTC)',
+    marker: { image: 'marker_f5.png', position: { x: 0.89, z: 3.65 } } // Near Lift
+  },
+  { 
+    id: 'f6', number: 6, label: '5th Floor',
+    marker: { image: 'marker_f6.png', position: { x: 0.89, z: 3.65 } } // Near Lift
+  },
 ];
 
 // ── All floor data in order ───────────────────────────────────────────────
