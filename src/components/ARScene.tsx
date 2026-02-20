@@ -479,7 +479,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         }
 
         // --- NEARBY FLOOR MESSAGES LOGIC ---
-        if (floorMessagesGroupRef.current && session && isCalibrated) {
+        if (floorMessagesGroupRef.current) {
           const userPos = new THREE.Vector3();
           camera.getWorldPosition(userPos);
 
@@ -488,13 +488,17 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
             msg.getWorldPosition(msgPos);
             const dist = userPos.distanceTo(msgPos);
             
-            // Show messages within 4 meters
-            msg.visible = dist < 4;
+            const isAR = session && isCalibrated;
+            
+            // In AR, only show messages within 4 meters
+            // In 3D view, show them all
+            msg.visible = isAR ? (dist < 4) : true;
             
             if (msg.visible) {
               const mat = (msg as THREE.Mesh).material as THREE.MeshStandardMaterial;
-              const opacity = THREE.MathUtils.clamp(1 - (dist / 4), 0, 1);
+              const opacity = isAR ? THREE.MathUtils.clamp(1 - (dist / 4), 0, 1) : 0.9;
               mat.opacity = opacity;
+              mat.transparent = true;
               
               // Pulse effect
               const pulse = 1 + Math.sin(time * 3) * 0.05;
