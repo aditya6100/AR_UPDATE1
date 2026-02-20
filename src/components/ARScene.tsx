@@ -36,6 +36,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   const floorPlanGroupRef = useRef<THREE.Group | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const spheresRef = useRef<ArrowElement[]>([]);
+  const destinationBeaconRef = useRef<THREE.Group | null>(null);
   const lineRef = useRef<THREE.Line | null>(null);
   const animationIndexRef = useRef(0);
   const curvePointsGlobalRef = useRef<THREE.Vector3[]>([]);
@@ -209,8 +210,8 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
       if (!group) return;
 
       // ── Scale the floor plan group to real-world metres ────────────────
-      // Set to 1.0 for 1:1 scale (1 unit = 1 metre).
-      const AR_SCALE = 1.0;
+      // Set to 1.5 for adjusted scale (arrows were ending too early).
+      const AR_SCALE = 1.5;
       group.scale.set(AR_SCALE, AR_SCALE, AR_SCALE);
 
       // ── Position & Rotation: Align path to start in front of user ──────
@@ -227,7 +228,6 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         group.rotation.set(0, -pathAngle, 0);
 
         // 3. Position: Place first waypoint (p1) exactly at user's feet (origin)
-        // for 1:1 real-world measurement.
         const p1Vec = new THREE.Vector3(p1[0], 0, p1[1]).multiplyScalar(AR_SCALE);
         p1Vec.applyAxisAngle(new THREE.Vector3(0, 1, 0), group.rotation.y);
         
@@ -516,13 +516,25 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   };
 
   const drawPath = (segment: PathSegment, floorPlanGroup: THREE.Group) => {
-    // ── Clear old arrows ────────────────────────────────────────────────────
+    // ── Clear old arrows and beacon ──────────────────────────────────────────
     spheresRef.current.forEach(entry => {
       floorPlanGroup.remove(entry.cone, entry.shaft, entry.ring);
       entry.coneGeo.dispose();  entry.shaftGeo.dispose();  entry.ringGeo.dispose();
       entry.coneMat.dispose();  entry.shaftMat.dispose();  entry.ringMat.dispose();
     });
     spheresRef.current = [];
+
+    if (destinationBeaconRef.current) {
+      floorPlanGroup.remove(destinationBeaconRef.current);
+      destinationBeaconRef.current.traverse(child => {
+        if ((child as THREE.Mesh).isMesh) {
+          (child as THREE.Mesh).geometry.dispose();
+          ((child as THREE.Mesh).material as THREE.Material).dispose();
+        }
+      });
+      destinationBeaconRef.current = null;
+    }
+
     animationIndexRef.current = 0;
     curvePointsGlobalRef.current = [];
     pathCurveRef.current = null;
@@ -542,6 +554,34 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     });
 
     if (pathPoints.length < 2) return;
+
+    // ── Build destination beacon ────────────────────────────────────────────
+    const endPos = pathPoints[pathPoints.length - 1];
+    const beaconGroup = new THREE.Group();
+    
+    // Glowing ring on ground
+    const torusGeo = new THREE.TorusGeometry(0.5, 0.05, 16, 32);
+    const torusMat = new THREE.MeshStandardMaterial({ color: 0xa78bfa, emissive: 0xa78bfa, emissiveIntensity: 5 });
+    const ring = new THREE.Mesh(torusGeo, torusMat);
+    ring.rotation.x = -Math.PI / 2;
+    beaconGroup.add(ring);
+
+    // Glowing beam/pillar
+    const beamGeo = new THREE.CylinderGeometry(0.1, 0.5, 3, 16);
+    const beamMat = new THREE.MeshStandardMaterial({ 
+      color: 0xa78bfa, 
+      emissive: 0xa78bfa, 
+      emissiveIntensity: 2, 
+      transparent: true, 
+      opacity: 0.6 
+    });
+    const beam = new THREE.Mesh(beamGeo, beamMat);
+    beam.position.y = 1.5;
+    beaconGroup.add(beam);
+
+    beaconGroup.position.copy(endPos).setY(0.01);
+    floorPlanGroup.add(beaconGroup);
+    destinationBeaconRef.current = beaconGroup;
 
     // ── Build curve ─────────────────────────────────────────────────────────
     const curve = new THREE.CatmullRomCurve3(pathPoints);
