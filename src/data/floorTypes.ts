@@ -16,6 +16,13 @@ export interface Wall {
   p2: [number, number];
 }
 
+export interface FloorMessage {
+  id: string;
+  text: string;
+  position: [number, number];
+  type: 'welcome' | 'quote' | 'utility';
+}
+
 export interface FloorData {
   floorId: string;
   floorNumber: number;
@@ -23,6 +30,7 @@ export interface FloorData {
   rooms: Room[];
   waypoints: Waypoint[];
   walls: Wall[];
+  floorMessages?: FloorMessage[]; // 👈 New field
   wallHeight: number;
   wallThickness: number;
   planSize?: { width: number; height: number };

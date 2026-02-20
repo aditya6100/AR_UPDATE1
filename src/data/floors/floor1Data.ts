@@ -53,4 +53,11 @@ export const floor1Data = {
 
   wallHeight: 3,
   wallThickness: 0.2,
+
+  floorMessages: [
+    { id: "m1", type: "welcome", text: "WELCOME TO THE COLLEGE",    position: [-24, 2] },
+    { id: "m2", type: "quote",   text: "Keep Moving Forward 🚀",    position: [0, 0] },
+    { id: "m3", type: "utility", text: "LIFT ACCESS 🛗",             position: [-24, -2] },
+    { id: "m4", type: "utility", text: "GYMKHANA ENTRANCE",         position: [-22, 2] },
+  ],
 };

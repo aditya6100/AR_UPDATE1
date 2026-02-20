@@ -46,6 +46,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
   const wallGroupRef = useRef<THREE.Group | null>(null);
   const floorMaterialRef = useRef<THREE.MeshStandardMaterial | null>(null);
   const labelsGroupRef = useRef<THREE.Group | null>(null);
+  const floorMessagesGroupRef = useRef<THREE.Group | null>(null);
   const floorRef = useRef<THREE.Mesh | null>(null);
   const startRoomRef  = useRef(startRoomId);
   const endRoomIdRef  = useRef(endRoomId);
@@ -114,6 +115,16 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         }
       });
     }
+    // Clear old floor messages
+    if (floorMessagesGroupRef.current) {
+      floorPlanGroupRef.current.remove(floorMessagesGroupRef.current);
+      floorMessagesGroupRef.current.traverse(child => {
+        if ((child as THREE.Mesh).isMesh) {
+          (child as THREE.Mesh).geometry.dispose();
+          ((child as THREE.Mesh).material as THREE.Material).dispose();
+        }
+      });
+    }
     // Clear path arrows
     spheresRef.current.forEach(e => {
       floorPlanGroupRef.current!.remove(e.cone, e.shaft);
@@ -133,6 +144,11 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     labelsGroupRef.current = newLabels;
     floorPlanGroupRef.current.add(newLabels);
     drawRoomLabels(newLabels);
+
+    const newMessages = new THREE.Group();
+    floorMessagesGroupRef.current = newMessages;
+    floorPlanGroupRef.current.add(newMessages);
+    drawFloorMessages(newMessages);
 
     // Redraw floor plane
     if (floorRef.current) {
@@ -293,6 +309,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
 
       // ── Hide walls, floor, labels (show only arrows in AR) ─────────────
       if (labelsGroupRef.current) labelsGroupRef.current.visible = false;
+      if (floorMessagesGroupRef.current) floorMessagesGroupRef.current.visible = false;
       if (floorRef.current)       floorRef.current.visible       = false;
 
       if (wallGroupRef.current) {
@@ -439,6 +456,31 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
               const mat = (label as THREE.Mesh).material as THREE.MeshBasicMaterial;
               mat.opacity = THREE.MathUtils.lerp(1, 0, (dist - 2) / 3);
               label.scale.setScalar(THREE.MathUtils.lerp(1, 0.5, (dist - 2) / 3));
+            }
+          });
+        }
+
+        // --- NEARBY FLOOR MESSAGES LOGIC ---
+        if (floorMessagesGroupRef.current && session && isCalibrated) {
+          const userPos = new THREE.Vector3();
+          camera.getWorldPosition(userPos);
+
+          floorMessagesGroupRef.current.children.forEach((msg) => {
+            const msgPos = new THREE.Vector3();
+            msg.getWorldPosition(msgPos);
+            const dist = userPos.distanceTo(msgPos);
+            
+            // Show messages within 4 meters
+            msg.visible = dist < 4;
+            
+            if (msg.visible) {
+              const mat = (msg as THREE.Mesh).material as THREE.MeshStandardMaterial;
+              const opacity = THREE.MathUtils.clamp(1 - (dist / 4), 0, 1);
+              mat.opacity = opacity;
+              
+              // Pulse effect
+              const pulse = 1 + Math.sin(time * 3) * 0.05;
+              msg.scale.setScalar(pulse);
             }
           });
         }
@@ -682,6 +724,61 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
       labelMesh.rotation.x = -Math.PI / 2;
 
       floorPlanGroup.add(labelMesh);
+    });
+  };
+
+  const drawFloorMessages = (group: THREE.Group) => {
+    if (!floorData.floorMessages) return;
+
+    floorData.floorMessages.forEach((msg) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = 1024;
+      canvas.height = 256;
+
+      // Professional holographic look
+      const isWelcome = msg.type === 'welcome';
+      const color = isWelcome ? '#8b5cf6' : (msg.type === 'quote' ? '#10b981' : '#f59e0b');
+      
+      // Background glow
+      ctx.fillStyle = 'rgba(15, 15, 25, 0.7)';
+      ctx.roundRect(0, 0, canvas.width, canvas.height, 40);
+      ctx.fill();
+      
+      // Border
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      // Text
+      ctx.font = 'bold 80px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Shadow for glow
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 30;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(msg.text, canvas.width / 2, canvas.height / 2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.MeshStandardMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0, // start hidden for proximity logic
+        depthWrite: false,
+        emissive: new THREE.Color(color),
+        emissiveIntensity: 2
+      });
+
+      const planeGeo = new THREE.PlaneGeometry(isWelcome ? 4 : 2.5, isWelcome ? 1 : 0.6);
+      const mesh = new THREE.Mesh(planeGeo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(msg.position[0], 0.02, msg.position[1]);
+      
+      group.add(mesh);
     });
   };
 

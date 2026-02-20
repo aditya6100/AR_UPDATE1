@@ -50,4 +50,9 @@ export const floor6Data = {
 
   wallHeight: 3,
   wallThickness: 0.2,
+
+  floorMessages: [
+    { id: "m1", type: "welcome", text: "5TH FLOOR CLASSROOMS",     position: [-24, 2] },
+    { id: "m2", type: "quote",   text: "Reach for the Stars ✨",    position: [0, 0] },
+  ],
 };

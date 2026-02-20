@@ -59,4 +59,12 @@ export const floor3Data = {
 
   wallHeight: 3,
   wallThickness: 0.2,
+
+  floorMessages: [
+    { id: "m1", type: "welcome", text: "WELCOME TO CSE DEPARTMENT", position: [-24, 2] },
+    { id: "m2", type: "quote",   text: "The Future is Built Here 🛠️",  position: [0, 0] },
+    { id: "m3", type: "quote",   text: "Innovate Every Day 💡",       position: [10, 0] },
+    { id: "m4", type: "utility", text: "LIFT ACCESS 🛗",             position: [-24, -2] },
+    { id: "m5", type: "utility", text: "RESTROOMS 🚻",               position: [11, 2] },
+  ],
 };

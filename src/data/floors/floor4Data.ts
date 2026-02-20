@@ -52,4 +52,9 @@ export const floor4Data = {
 
   wallHeight: 3,
   wallThickness: 0.2,
+
+  floorMessages: [
+    { id: "m1", type: "welcome", text: "3RD FLOOR - CLASSROOMS",    position: [-24, 2] },
+    { id: "m2", type: "quote",   text: "Knowledge is Power 📚",     position: [0, 0] },
+  ],
 };

@@ -53,4 +53,9 @@ export const floor5Data = {
 
   wallHeight: 3,
   wallThickness: 0.2,
+
+  floorMessages: [
+    { id: "m1", type: "welcome", text: "WELCOME TO ENTC DEPT",      position: [-24, 2] },
+    { id: "m2", type: "quote",   text: "Connecting the World 📡",   position: [0, 0] },
+  ],
 };

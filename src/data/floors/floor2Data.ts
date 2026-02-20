@@ -53,4 +53,10 @@ export const floor2Data = {
 
   wallHeight: 3,
   wallThickness: 0.2,
+
+  floorMessages: [
+    { id: "m1", type: "welcome", text: "1ST FLOOR - LAB BLOCK",     position: [-24, 2] },
+    { id: "m2", type: "quote",   text: "Code is Poetry 💻",         position: [0, 0] },
+    { id: "m3", type: "utility", text: "LAB ACCESS AHEAD",          position: [-10, 0] },
+  ],
 };
