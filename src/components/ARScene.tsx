@@ -658,32 +658,7 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     lineRef.current = line;
 
     // ── Place arrows immediately (all at once) ──────────────────────────────
-    const ARROW_SPACING = 4;  // Doubled density (was 8)
-    const isAR = rendererRef.current?.xr.isPresenting ?? false;
-    const curve = new THREE.CatmullRomCurve3(pathPoints);
-    pathCurveRef.current = curve;
-
-    // More curve points = smoother arrow placement
-    const TOTAL_PTS = 300;
-    const curvePoints = curve.getPoints(TOTAL_PTS);
-    curvePointsGlobalRef.current = curvePoints;
-
-    // Glowing path line (visible in 3D view, hidden in AR)
-    const lineGeo = new THREE.BufferGeometry().setFromPoints(curvePoints);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0xC792EA, linewidth: 2 });
-    const line = new THREE.Line(lineGeo, lineMat);
-    line.userData.isPathLine = true;
-    floorPlanGroup.add(line);
-    lineRef.current = line;
-
-    // ── Place arrows immediately (all at once) ──────────────────────────────
-    // Arrow scale:
-    //   3D view:  floor plan is ~52 world units wide → arrows at 0.3 units look fine
-    //   AR mode:  floorPlanGroup is scaled down (each world unit ≈ 0.05 real metres)
-    //             so 0.3 world units = ~1.5cm in AR — still visible on floor
-    //   We use larger arrows (0.35 cone height) with very bright emissive so they
-    //   are clearly visible in both modes.
-    const ARROW_SPACING = 8;  // place one arrow every N curve points
+    const ARROW_SPACING = 4;
     const isAR = rendererRef.current?.xr.isPresenting ?? false;
 
     // In AR we want real-world scale arrows (~20cm tall)
