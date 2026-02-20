@@ -957,8 +957,10 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     curvePointsGlobalRef.current = curvePoints;
 
     // Glowing path line (visible in 3D view, hidden in AR)
-    const lineGeo = new THREE.BufferGeometry().setFromPoints(curvePoints);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0xC792EA, linewidth: 2 });
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(
+      pathPoints.map(p => p.clone().setY(0.15))
+    );
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x8b5cf6, linewidth: 3 });
     const line = new THREE.Line(lineGeo, lineMat);
     line.userData.isPathLine = true;
     floorPlanGroup.add(line);
@@ -1038,8 +1040,8 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       <div ref={containerRef} className="fixed inset-0 z-0" />
       
       {isScanning && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-purple-500/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-xs text-center">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm pointer-events-auto">
+          <div className="bg-slate-900 border border-purple-500/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-xs text-center pointer-events-auto">
             <div className="relative w-24 h-24 mb-6">
               <div className="absolute inset-0 border-4 border-purple-500 rounded-2xl animate-pulse" />
               <div className="absolute inset-4 border-2 border-purple-400/50 rounded-lg animate-ping" />
