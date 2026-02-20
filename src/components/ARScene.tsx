@@ -469,17 +469,24 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
     if (!floorData) return;
     // Room width in world units — used to scale the label plane so it fits inside the room
     const roomWidths: Record<string, number> = {
-      // Floor 1
-      principal: 8, admin: 8, conf: 8, lab1: 10, canteen: 12, library: 8, ramp: 4,
-      // Floor 2
-      hod: 6, dept_lib: 4, server: 6, tutorial: 3.5, lab10: 6, stairs_top: 3,
-      lab9: 14, corridor: 20, lift: 3, stairs_bot: 3, lab7: 14, lab8: 5, 
-      women: 6, gents: 6,
+      // General/Gym
+      gymkhana: 12, gents: 6, women: 6,
+      // G-series
+      g1: 8, g2: 8, g3: 8, g4: 8, g5: 8,
+      // Labs
+      lab1: 8, lab2: 8, lab3: 8, lab4: 8, lab5: 8, lab6: 8, lab7: 10, lab8: 10, lab9: 14, lab10: 8,
+      lab11: 8, lab12: 8, lab13: 8, lab14: 8,
+      // Offices/Tutorials
+      hod: 6, entc_hod: 6, dept_lib: 4, server: 6, tutorial: 3.5, corridor: 20, lift: 3, stairs_bot: 3, 
+      faculty: 6, seminar: 10,
+      // Classrooms
+      '301': 8, '302': 8, '303': 8, '304': 8, '306': 8,
+      '501': 8, '502': 8, '503': 8, '504': 8, '505': 8,
     };
     // roomDepths: label plane depth in world units
     const roomDepths: Record<string, number> = {
-      principal: 6, admin: 6, conf: 6, lab1: 6, canteen: 6, library: 6, ramp: 6,
-      hod: 6, dept_lib: 6, server: 6, tutorial: 6, lab10: 6, stairs_top: 6,
+      gymkhana: 6, principal: 6, admin: 6, conf: 6, lab1: 6, canteen: 6, library: 6, ramp: 6,
+      hod: 6, entc_hod: 6, dept_lib: 6, server: 6, tutorial: 6, lab10: 6, stairs_top: 6,
       lab9: 6, corridor: 2, lift: 6, stairs_bot: 6, lab7: 6, lab8: 6,
       women: 6, gents: 6,
     };
