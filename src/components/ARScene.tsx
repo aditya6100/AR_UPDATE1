@@ -224,9 +224,9 @@ export default function ARScene({ floorData, activeSegment, startRoomId, endRoom
         const dz = p2[1] - p1[1];
         const pathAngle = Math.atan2(dx, dz);
 
-        // 2. Adjust rotation: trying the final 90-degree increment (0 baseline)
-        // Previous attempts (PI, PI/2, 1.5PI) were either on the right or crossing.
-        group.rotation.set(0, -pathAngle, 0);
+        // 2. Adjust rotation: 180 degrees from the 0-baseline attempt.
+        // This is Math.PI - pathAngle.
+        group.rotation.set(0, Math.PI - pathAngle, 0);
 
         // 3. Position: place first waypoint (p1) at user's feet (origin)
         const p1Vec = new THREE.Vector3(p1[0], 0, p1[1]).multiplyScalar(AR_SCALE);
