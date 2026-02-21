@@ -909,7 +909,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     lineRef.current = line;
 
     // ── Place arrows immediately (all at once) ──────────────────────────────
-    const ARROW_SPACING = 12; // Increased spacing to reduce clutter
+    const ARROW_SPACING = 20; 
     const isAR = rendererRef.current?.xr.isPresenting ?? false;
 
     // In AR we want real-world scale arrows (~20cm tall)
@@ -922,7 +922,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     const shaftR = isAR ? 0.025: 0.04;
     const ringO  = isAR ? 0.08 : 0.14;
     const ringI  = isAR ? 0.05 : 0.09;
-    const arrowY = isAR ? 0.01 : 0.12;  // On the ground for AR
+    const arrowY = isAR ? 0.91 : 0.12;  // 0.91m = ~3 feet
 
     for (let idx = 0; idx < curvePoints.length; idx += ARROW_SPACING) {
       const pt      = curvePoints[idx].clone();
@@ -969,7 +969,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = -Math.PI / 2;
-      ring.position.copy(pt).setY(0.005);
+      ring.position.copy(pt).setY(arrowY - 0.05); // Floats below arrow
       ring.userData.baseY = ring.position.y;
 
       floorPlanGroup.add(cone, shaft, ring);
