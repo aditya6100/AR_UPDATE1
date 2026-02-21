@@ -941,7 +941,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     lineRef.current = line;
 
     // ── Place arrows immediately (all at once) ──────────────────────────────
-    const ARROW_SPACING = 4;
+    const ARROW_SPACING = 12; // Increased spacing to reduce clutter
     const isAR = rendererRef.current?.xr.isPresenting ?? false;
 
     // In AR we want real-world scale arrows (~20cm tall)
