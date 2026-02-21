@@ -948,13 +948,13 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     // In 3D view we want proportional arrows relative to the floor plan
     // The floor plan group in AR is positioned at real scale so 1 unit = 1 metre
     // We detect AR and use 0.2 (20cm) vs 0.4 (proportional to 52-unit plan)
-    const coneH  = isAR ? 0.08 : 0.40;
-    const coneR  = isAR ? 0.08 : 0.12;
-    const shaftL = isAR ? 0.05 : 0.28;
-    const shaftR = isAR ? 0.015 : 0.04;
-    const ringO  = isAR ? 0.05 : 0.14;
-    const ringI  = isAR ? 0.02 : 0.09;
-    const arrowY = isAR ? 0.05 : 0.12;  // Raised to 0.05 to be above the green floor (0.01)
+    const coneH  = isAR ? 0.20 : 0.40;
+    const coneR  = isAR ? 0.07 : 0.12;
+    const shaftL = isAR ? 0.15 : 0.28;
+    const shaftR = isAR ? 0.025: 0.04;
+    const ringO  = isAR ? 0.08 : 0.14;
+    const ringI  = isAR ? 0.05 : 0.09;
+    const arrowY = isAR ? 0.01 : 0.12;  // On the ground for AR
 
     for (let idx = 0; idx < curvePoints.length; idx += ARROW_SPACING) {
       const pt      = curvePoints[idx].clone();
@@ -962,23 +962,23 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       const t       = idx / (curvePoints.length - 1);
       const tangent = curve.getTangent(t).normalize();
 
-      // ── Flatter Chevron/Diamond Shape (Professional Look) ────────────────
-      const coneGeo = new THREE.OctahedronGeometry(coneR, 0);
+      // ── CONE ARROW (Back to traditional arrows) ───────────────────────────
+      const coneGeo = new THREE.ConeGeometry(coneR, coneH, 16);
       const coneMat = new THREE.MeshStandardMaterial({
         color: 0x8b5cf6,
         emissive: 0x8b5cf6,
-        emissiveIntensity: 4.0,
-        transparent: true,
-        opacity: 0.9,
+        emissiveIntensity: 3.0,
+        roughness: 0.2,
+        metalness: 0.3,
       });
       const cone = new THREE.Mesh(coneGeo, coneMat);
       cone.position.copy(pt).setY(arrowY + coneH / 2);
-      cone.scale.set(1, 0.4, 1.2); // Flattened for professional look
       const lookAt = pt.clone().add(tangent);
       cone.lookAt(lookAt.x, arrowY + coneH / 2, lookAt.z);
+      cone.rotateX(Math.PI / 2); // Point forward
       cone.userData.baseY = cone.position.y;
 
-      // ── Thin Shaft ────────────────────────────────────────────────────────────
+      // ── Shaft ────────────────────────────────────────────────────────────
       const shaftGeo = new THREE.CylinderGeometry(shaftR, shaftR, shaftL, 12);
       const shaftMat = new THREE.MeshStandardMaterial({
         color: 0x8b5cf6,
@@ -986,22 +986,22 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
         emissiveIntensity: 2.5,
       });
       const shaft = new THREE.Mesh(shaftGeo, shaftMat);
-      shaft.position.copy(pt).setY(arrowY + coneH / 4);
+      shaft.position.copy(pt).setY(arrowY + coneH / 2);
       shaft.quaternion.copy(cone.quaternion);
-      shaft.translateY(-(coneH / 2));
+      shaft.translateY(-(coneH / 2 + shaftL / 2));
       shaft.userData.baseY = shaft.position.y;
 
-      // ── Subtle Glow Ring ──────────────────────────────────────────
+      // ── Ground Ring ──────────────────────────────────────────
       const ringGeo = new THREE.RingGeometry(ringI, ringO, 24);
       const ringMat = new THREE.MeshBasicMaterial({
         color: 0x8b5cf6,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.3,
+        opacity: 0.5,
       });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = -Math.PI / 2;
-      ring.position.copy(pt).setY(0.001);
+      ring.position.copy(pt).setY(0.005);
       ring.userData.baseY = ring.position.y;
 
       floorPlanGroup.add(cone, shaft, ring);
