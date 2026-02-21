@@ -523,15 +523,10 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
           (startPulseRef.current.material as THREE.MeshStandardMaterial).opacity = 0.5 + Math.sin(timeArrows * 4) * 0.5;
         }
         if (destinationBeaconRef.current) {
-          const gem = destinationBeaconRef.current.children[3];
-          if (gem) {
-            gem.rotation.y += 0.03;
-            gem.position.y = 7.0 + Math.sin(timeArrows * 2.5) * 0.5;
-          }
-          const ring2 = destinationBeaconRef.current.children[1];
-          if (ring2) {
-            ring2.rotation.z += 0.02;
-            ring2.scale.setScalar(1.2 + Math.sin(timeArrows * 2) * 0.1);
+          const circle = destinationBeaconRef.current.children[0];
+          if (circle) {
+            const pulse = 1 + Math.sin(timeArrows * 4) * 0.15;
+            circle.scale.set(pulse, pulse, pulse);
           }
         }
 
@@ -875,47 +870,20 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     floorPlanGroup.add(startRing);
     startPulseRef.current = startRing;
 
-    // ── Build destination beacon ────────────────────────────────────────────
+    // ── Build destination circle ────────────────────────────────────────────
     const endPos = pathPoints[pathPoints.length - 1];
     const beaconGroup = new THREE.Group();
     
-    // Glowing base ring
-    const torusGeo = new THREE.TorusGeometry(1.0, 0.1, 16, 48);
+    // Glowing yellow ring on ground
+    const torusGeo = new THREE.TorusGeometry(0.6, 0.08, 16, 48);
     const torusMat = new THREE.MeshStandardMaterial({ 
-      color: 0x00f2ff, 
-      emissive: 0x00f2ff, 
-      emissiveIntensity: 8 
+      color: 0xffff00, // Yellow
+      emissive: 0xffff00, 
+      emissiveIntensity: 5 
     });
     const ring = new THREE.Mesh(torusGeo, torusMat);
     ring.rotation.x = -Math.PI / 2;
     beaconGroup.add(ring);
-
-    // Rotating ring
-    const ring2Geo = new THREE.TorusGeometry(1.5, 0.05, 8, 32);
-    const ring2 = new THREE.Mesh(ring2Geo, torusMat);
-    ring2.rotation.x = -Math.PI / 2;
-    beaconGroup.add(ring2);
-
-    // Glowing beam/pillar (transparent spire)
-    const beamGeo = new THREE.CylinderGeometry(0.05, 1.0, 6, 24, 1, true);
-    const beamMat = new THREE.MeshStandardMaterial({ 
-      color: 0xa78bfa, 
-      emissive: 0xa78bfa, 
-      emissiveIntensity: 4, 
-      transparent: true, 
-      opacity: 0.3,
-      side: THREE.DoubleSide
-    });
-    const beam = new THREE.Mesh(beamGeo, beamMat);
-    beam.position.y = 3;
-    beaconGroup.add(beam);
-
-    // Floating destination "gem"
-    const gemGeo = new THREE.OctahedronGeometry(0.5);
-    const gemMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xa78bfa, emissiveIntensity: 12 });
-    const gem = new THREE.Mesh(gemGeo, gemMat);
-    gem.position.y = 7.0;
-    beaconGroup.add(gem);
 
     beaconGroup.position.copy(endPos).setY(0.01);
     floorPlanGroup.add(beaconGroup);
