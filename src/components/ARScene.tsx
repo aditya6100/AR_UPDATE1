@@ -10,13 +10,10 @@ import type { PathSegment } from '../utils/multiFloorPathfinding';
 interface ArrowElement {
   cone: THREE.Mesh;
   shaft: THREE.Mesh;
-  ring: THREE.Mesh;
   coneGeo: THREE.ConeGeometry;
   coneMat: THREE.MeshPhysicalMaterial;
   shaftGeo: THREE.CylinderGeometry;
-  shaftMat: THREE.MeshPhysicalMaterial;
-  ringGeo: THREE.RingGeometry;
-  ringMat: THREE.MeshBasicMaterial;
+  shaftMat: THREE.MeshStandardMaterial;
 }
 
 interface ARSceneProps {
@@ -502,18 +499,41 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
           });
         }
 
-        // 6. ANIMATE ARROWS
+        // 6. ANIMATE ARROWS (Proximity-based visibility)
         const timeArrows = performance.now() * 0.001;
+        const userPosArrows = new THREE.Vector3();
+        camera.getWorldPosition(userPosArrows);
+
         spheresRef.current.forEach((entry, i) => {
-          const { cone, shaft, ring } = entry;
-          const floatOffset = Math.sin(timeArrows * 2 + i * 0.4) * 0.04;
-          if (cone.userData.baseY !== undefined) cone.position.y = cone.userData.baseY + floatOffset;
-          if (shaft.userData.baseY !== undefined) shaft.position.y = shaft.userData.baseY + floatOffset;
-          const pulse = 1.8 + Math.sin(timeArrows * 3 + i) * 0.7;
-          [cone, shaft].forEach(m => (m.material as THREE.MeshStandardMaterial).emissiveIntensity = pulse);
-          const scale = 1 + Math.sin(timeArrows * 2 + i) * 0.04;
-          cone.scale.set(scale, scale, scale);
-          shaft.scale.set(scale, scale, scale);
+          const { cone, shaft } = entry;
+          
+          const arrowPos = new THREE.Vector3();
+          cone.getWorldPosition(arrowPos);
+          const dist = userPosArrows.distanceTo(arrowPos);
+          
+          // Only show arrows within 10 meters
+          const isNearby = dist < 10;
+          cone.visible = isNearby;
+          shaft.visible = isNearby;
+
+          if (isNearby) {
+            // Fade in/out
+            const opacity = THREE.MathUtils.lerp(1, 0, (dist - 5) / 5);
+            (cone.material as THREE.MeshStandardMaterial).opacity = opacity;
+            (shaft.material as THREE.MeshStandardMaterial).opacity = opacity;
+
+            const floatOffset = Math.sin(timeArrows * 2 + i * 0.4) * 0.04;
+            if (cone.userData.baseY !== undefined) cone.position.y = cone.userData.baseY + floatOffset;
+            if (shaft.userData.baseY !== undefined) shaft.position.y = shaft.userData.baseY + floatOffset;
+            
+            const pulse = 1.8 + Math.sin(timeArrows * 3 + i) * 0.7;
+            (cone.material as THREE.MeshStandardMaterial).emissiveIntensity = pulse;
+            (shaft.material as THREE.MeshStandardMaterial).emissiveIntensity = pulse;
+            
+            const scale = 1 + Math.sin(timeArrows * 2 + i) * 0.04;
+            cone.scale.set(scale, scale, scale);
+            shaft.scale.set(scale, scale, scale);
+          }
         });
 
         // 7. ANIMATE START/DEST
@@ -938,6 +958,8 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
         emissiveIntensity: 3.0,
         roughness: 0.2,
         metalness: 0.3,
+        transparent: true,
+        opacity: 0,
       });
       const cone = new THREE.Mesh(coneGeo, coneMat);
       cone.position.copy(pt).setY(arrowY + coneH / 2);
@@ -952,6 +974,8 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
         color: 0x00f2ff,
         emissive: 0x00f2ff,
         emissiveIntensity: 2.5,
+        transparent: true,
+        opacity: 0,
       });
       const shaft = new THREE.Mesh(shaftGeo, shaftMat);
       shaft.position.copy(pt).setY(arrowY + coneH / 2);
@@ -959,21 +983,8 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       shaft.translateY(-(coneH / 2 + shaftL / 2));
       shaft.userData.baseY = shaft.position.y;
 
-      // ── Ground Ring ──────────────────────────────────────────
-      const ringGeo = new THREE.RingGeometry(ringI, ringO, 24);
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: 0x00f2ff,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.5,
-      });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.copy(pt).setY(arrowY - 0.05); // Floats below arrow
-      ring.userData.baseY = ring.position.y;
-
-      floorPlanGroup.add(cone, shaft, ring);
-      spheresRef.current.push({ cone, shaft, ring, coneGeo, coneMat, shaftGeo, shaftMat, ringGeo, ringMat });
+      floorPlanGroup.add(cone, shaft);
+      spheresRef.current.push({ cone, shaft, coneGeo, coneMat, shaftGeo, shaftMat });
     }
   };
 
