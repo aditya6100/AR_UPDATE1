@@ -235,7 +235,7 @@ export function findMultiFloorPath(
 
   // Final touches for start and end segments
   if (segments.length > 0) {
-      // 1. First segment: Add room center and 'behind' point
+    // 1. First segment: Lead user OUT of the room
     if (startRoomPos) {
       const firstSeg = segments[0];
       const firstWpPos = firstSeg.positions[0];
@@ -243,25 +243,14 @@ export function findMultiFloorPath(
       const dz = startRoomPos[1] - firstWpPos[1];
       const mag = Math.sqrt(dx * dx + dz * dz);
       
-      // Safety check: ensure magnitude is valid and non-zero
       if (mag > 0.01) {
-        const behind: [number, number] = [
-          startRoomPos[0] + (dx / mag) * 1.5, 
-          startRoomPos[1] + (dz / mag) * 1.5
-        ];
-        firstSeg.positions.unshift(startRoomPos);
-        firstSeg.positions.unshift(behind);
-      } else {
-        // Fallback: just add room center if we are on top of the waypoint
+        // Just lead from center to hallway, don't go 'behind' anymore
         firstSeg.positions.unshift(startRoomPos);
       }
     }
 
-    // 2. Last segment: Add end room center
-    if (endRoomPos) {
-      const lastSeg = segments[segments.length - 1];
-      lastSeg.positions.push(endRoomPos);
-    }
+    // 2. Last segment: Lead user TO THE DOOR only (hallway waypoint)
+    // We remove the endRoomPos push so arrows don't enter the room/wall
   }
 
   return segments;
