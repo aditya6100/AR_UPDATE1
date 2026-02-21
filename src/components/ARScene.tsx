@@ -882,8 +882,8 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     // Glowing base ring
     const torusGeo = new THREE.TorusGeometry(1.0, 0.1, 16, 48);
     const torusMat = new THREE.MeshStandardMaterial({ 
-      color: 0x8b5cf6, 
-      emissive: 0x8b5cf6, 
+      color: 0x00f2ff, 
+      emissive: 0x00f2ff, 
       emissiveIntensity: 8 
     });
     const ring = new THREE.Mesh(torusGeo, torusMat);
@@ -934,7 +934,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
     const lineGeo = new THREE.BufferGeometry().setFromPoints(
       pathPoints.map(p => p.clone().setY(0.15))
     );
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x8b5cf6, linewidth: 3 });
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x00f2ff, linewidth: 3 });
     const line = new THREE.Line(lineGeo, lineMat);
     line.userData.isPathLine = true;
     floorPlanGroup.add(line);
@@ -965,8 +965,8 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       // ── CONE ARROW (Back to traditional arrows) ───────────────────────────
       const coneGeo = new THREE.ConeGeometry(coneR, coneH, 16);
       const coneMat = new THREE.MeshStandardMaterial({
-        color: 0x8b5cf6,
-        emissive: 0x8b5cf6,
+        color: 0x00f2ff,
+        emissive: 0x00f2ff,
         emissiveIntensity: 3.0,
         roughness: 0.2,
         metalness: 0.3,
@@ -981,8 +981,8 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       // ── Shaft ────────────────────────────────────────────────────────────
       const shaftGeo = new THREE.CylinderGeometry(shaftR, shaftR, shaftL, 12);
       const shaftMat = new THREE.MeshStandardMaterial({
-        color: 0x8b5cf6,
-        emissive: 0x8b5cf6,
+        color: 0x00f2ff,
+        emissive: 0x00f2ff,
         emissiveIntensity: 2.5,
       });
       const shaft = new THREE.Mesh(shaftGeo, shaftMat);
@@ -994,7 +994,7 @@ export default function ARScene({ floorData, activeSegment, pathSegments, startR
       // ── Ground Ring ──────────────────────────────────────────
       const ringGeo = new THREE.RingGeometry(ringI, ringO, 24);
       const ringMat = new THREE.MeshBasicMaterial({
-        color: 0x8b5cf6,
+        color: 0x00f2ff,
         side: THREE.DoubleSide,
         transparent: true,
         opacity: 0.5,
