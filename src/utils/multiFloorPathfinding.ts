@@ -235,22 +235,8 @@ export function findMultiFloorPath(
 
   // Final touches for start and end segments
   if (segments.length > 0) {
-    // 1. First segment: Lead user OUT of the room
-    if (startRoomPos) {
-      const firstSeg = segments[0];
-      const firstWpPos = firstSeg.positions[0];
-      const dx = startRoomPos[0] - firstWpPos[0];
-      const dz = startRoomPos[1] - firstWpPos[1];
-      const mag = Math.sqrt(dx * dx + dz * dz);
-      
-      if (mag > 0.01) {
-        // Just lead from center to hallway, don't go 'behind' anymore
-        firstSeg.positions.unshift(startRoomPos);
-      }
-    }
-
-    // 2. Last segment: Lead user TO THE DOOR only (hallway waypoint)
-    // We remove the endRoomPos push so arrows don't enter the room/wall
+    // Lead user TO THE DOOR only (hallway waypoint)
+    // We removed startRoomPos and endRoomPos pushes so arrows stay in the corridor
   }
 
   return segments;
